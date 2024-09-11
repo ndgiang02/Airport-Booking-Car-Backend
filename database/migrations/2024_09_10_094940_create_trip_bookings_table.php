@@ -31,6 +31,7 @@ return new class extends Migration {
             $table->enum('trip_status', ['requested', 'accepted', 'completed', 'cancelled']);
             $table->enum('trip_type', ['airport', 'long_distance'])->default('airport');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

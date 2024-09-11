@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('initial_starting_price', 10, 2);
             $table->string('image', 255)->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
         
     }

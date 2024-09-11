@@ -15,11 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('mobile', 20);
+            $table->string('mobile', 12);
             $table->string('password');
             $table->string('user_type');
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
