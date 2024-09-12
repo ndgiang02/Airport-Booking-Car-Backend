@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Driver;
-use App\Http\Requests\UserRequest;
-use App\Http\Requests\DriverRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\DriverResource;
 use Illuminate\Support\Facades\Auth;
@@ -19,114 +18,82 @@ class UserController extends Controller
     /**
      * Đăng ký người dùng
      */
-    public function register(UserRequest $request)
+    public function register(Request $request)
     {
-        $input = $request->all();
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+            'user_type' => 'nullable|in:customer,driver',
+            /*
+            'mobile' => [
+                'required',
+                'regex:/^(\+84|0)(3|5|7|8|9)[0-9]{8}$/'
+            ],
+            */
+            'mobile' => 'nullable|string|max:20|unique:users,mobile',
+            'license_no' => 'nullable|string|max:255',
+        ]);
 
-        // Mã hóa mật khẩu
-        $input['password'] = Hash::make($input['password']);
-        $input['user_type'] = $input['user_type'] ?? 'customer';
-
-        // Nếu là tài xế, đặt trạng thái thành 'pending'
-        if ($input['user_type'] === 'driver') {
-            $input['status'] = $input['status'] ?? 'pending';
+        $validatedData['password'] = Hash::make($validatedData['password']);
+        if ($validatedData['user_type'] === 'driver') {
+            $validatedData['status'] = 'pending';
+            $validatedData['is_available'] = true;
         }
 
-        $user = User::create($input);
-        $user->assignRole($input['user_type']);  // Gán vai trò cho người dùng
+        $user = User::create($validatedData);
 
-        // Nếu có thông tin chi tiết người dùng, tạo record liên quan
-        if ($request->has('user_detail')) {
-            $user->userDetail()->create($request->user_detail);
+        $user->assignRole($validatedData['user_type']);
+
+        if ($validatedData['user_type'] === 'driver') {
+            Driver::create([
+                'user_id' => $user->id,
+                'license_no' => $validatedData['license_no'],
+                'rating' => 5.0,
+                'available' => false,
+            ]);
+
+            // Nếu có chi tiết người dùng và tài khoản ngân hàng, có thể thêm sau
+            /*
+            if ($request->has('user_detail')) {
+                $user->userDetail()->create($request->user_detail);
+            }
+            if ($request->has('user_bank_account')) {
+                $user->userBankAccount()->create($request->user_bank_account);
+            }
+            // Tạo ví cho tài xế với số dư ban đầu là 0
+            $user->userWallet()->create(['total_amount' => 0]);
+            */
         }
 
-        // Trả về token API và phản hồi JSON
-        $user->api_token = $user->createToken('auth_token')->plainTextToken;
+        if ($validatedData['user_type'] === 'customer') {
+            Customer::create([
+                'user_id' => $user->id,
+                'rating' => 5.0,
+            ]);
+        }
+        $user->token = $user->createToken('auth_token')->plainTextToken;
         $response = [
-            'message' => __('message.save_form', ['form' => __('message.' . $input['user_type'])]),
+            'message' => __('message.save_form', ['form' => __('message.' . $validatedData['user_type'])]),
             'data' => new UserResource($user)
         ];
 
         return response()->json($response);
     }
 
-    /**
-     * Đăng ký tài xế
-     */
-    public function driverRegister(DriverRequest $request)
-    {
-        // Lấy tất cả dữ liệu từ request
-        $input = $request->all();
-    
-        // Mã hóa password trước khi lưu
-        $input['password'] = Hash::make($input['password']);
-    
-        // Xác định loại người dùng là 'driver'
-        $input['user_type'] = 'driver';
-        
-        // Đặt trạng thái của tài xế mới là 'pending'
-        $input['status'] = 'pending';
-    
-        // Mặc định tài xế là có sẵn (available)
-        $input['is_available'] = true;
-    
-        // Tạo người dùng mới với dữ liệu đã nhập vào bảng users
-        $user = User::create($input);
-    
-        // Tạo bản ghi cho bảng drivers với thông tin dành riêng cho tài xế
-        $driver = Driver::create([
-            'user_id' => $user->id,  // Liên kết với người dùng vừa tạo
-            'license_no' => $input['license_no'],  // Số giấy phép lái xe
-            'rating' => 5.0,  // Rating mặc định của tài xế là 5.0
-            'available' => true,  // Tài xế có sẵn
-            'vehicle_id' => $input['vehicle_id'],  // Phương tiện mà tài xế sử dụng
-        ]);
-    /*
-        // Nếu có chi tiết người dùng và tài khoản ngân hàng, tạo các bản ghi liên quan
-        if ($request->has('user_detail')) {
-            $user->userDetail()->create($request->user_detail);
-        }
-        if ($request->has('user_bank_account')) {
-            $user->userBankAccount()->create($request->user_bank_account);
-        }
-        
-        // Tạo ví cho tài xế với số dư ban đầu là 0
-        $user->userWallet()->create(['total_amount' => 0]);
-        */
-    
-        // Tạo token cho người dùng sau khi đăng ký
-        $user->api_token = $user->createToken('auth_token')->plainTextToken;
-    
-        // Chuẩn bị phản hồi dữ liệu sau khi đăng ký thành công
-        $response = [
-            'message' => __('message.save_form', ['form' => __('message.driver')]),
-            'data' => new DriverResource($user)  // Trả về dữ liệu người dùng dưới dạng resource
-        ];
-    
-        // Trả về phản hồi JSON
-        return response()->json($response);
-    }
-    
 
-    /**
-     * Đăng nhập người dùng
-     */
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password', 'user_type');
 
-        // Kiểm tra thông tin đăng nhập
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // Kiểm tra xem tài khoản có bị khóa không
             if ($user->status === 'banned') {
                 return response()->json(['message' => __('message.account_banned')], 400);
             }
 
-
-            // Trả về token API và thông tin người dùng
-            $user->api_token = $user->createToken('auth_token')->plainTextToken;
+            $user->token = $user->createToken('auth_token')->plainTextToken;
             $response = new UserResource($user);
 
             return response()->json(['data' => $response], 200);
@@ -135,9 +102,6 @@ class UserController extends Controller
         return response()->json(['message' => __('auth.failed')], 400);
     }
 
-    /**
-     * Lấy danh sách người dùng
-     */
     public function userList(Request $request)
     {
         $user_type = $request->get('user_type', 'customer');
@@ -157,9 +121,6 @@ class UserController extends Controller
         return UserResource::collection($users);
     }
 
-    /**
-     * Chi tiết người dùng
-     */
     public function userDetail(Request $request)
     {
         $id = $request->id;
@@ -172,12 +133,14 @@ class UserController extends Controller
 
         return new UserResource($user);
     }
-    
-    /**
-     * Đổi mật khẩu người dùng
-     */
+
     public function changePassword(Request $request)
     {
+        $request->validate([
+            'old_password' => 'required',
+            'new_password' => 'required|min:6|confirmed',
+        ]);
+
         $user = Auth::user();
 
         if (!Hash::check($request->old_password, $user->password)) {
@@ -194,52 +157,99 @@ class UserController extends Controller
         return response()->json(['message' => __('message.password_change')], 200);
     }
 
-    /**
-     * Cập nhật thông tin người dùng
-     */
+    /*
+
     public function updateProfile(UserRequest $request)
     {
         $user = Auth::user();
-        $user->fill($request->all())->save();
 
-        if ($request->has('profile_image')) {
-            $user->clearMediaCollection('profile_image');
-            $user->addMediaFromRequest('profile_image')->toMediaCollection('profile_image');
+        if ($request->has('id') && !empty($request->id)) {
+            $user = User::where('id', $request->id)->first();
+        }
+
+        if ($user == null) {
+            return response()->json(['message' => __('message.no_record_found')], 400);
+        }
+
+        if ($user->user_type == 'customer') {
+            $user->fill($request->only(['name', 'phone_number']))->update();
         }
 
         if ($user->user_type == 'driver') {
-            return new DriverResource($user);
+            $user->fill($request->all())->update();
+
+            if (isset($request->profile_image) && $request->profile_image != null) {
+                $user->clearMediaCollection('profile_image');
+                $user->addMediaFromRequest('profile_image')->toMediaCollection('profile_image');
+            }
+
+            if ($request->has('vehicle') && $request->vehicle != null) {
+                $vehicle = $user->vehicle()->first();
+                if ($vehicle) {
+                    $vehicle->fill($request->vehicle)->update();
+                } else {
+                    $user->vehicle()->create($request->vehicle);
+                }
+            }
         }
 
-        return new UserResource($user);
+        $user_data = User::find($user->id);
+
+        // Cập nhật user detail nếu có
+        if ($user_data->userDetail != null && $request->has('user_detail')) {
+            $user_data->userDetail->fill($request->user_detail)->update();
+        } else if ($request->has('user_detail') && $request->user_detail != null) {
+            $user_data->userDetail()->create($request->user_detail);
+        }
+
+        // Chuẩn bị dữ liệu phản hồi
+        $message = __('message.updated');
+        unset($user_data['media']);
+
+        // Chuẩn bị dữ liệu phản hồi cho tài xế hoặc khách hàng
+        if ($user_data->user_type == 'driver') {
+            $user_resource = new DriverResource($user_data);
+        } else {
+            $user_resource = new UserResource($user_data);
+        }
+
+        $response = [
+            'data' => $user_resource,
+            'message' => $message
+        ];
+
+        return response()->json($response);
     }
+        */
 
     public function logout(Request $request)
     {
         $user = Auth::user();
 
-        if($request->is('api*')){
-            $clear = request('clear');
-            if( $clear != null ) {
-                $user->$clear = null;
-            }
-            $user->save();
+        if ($request->is('api*')) {
+
+            $request->user()->currentAccessToken()->delete();
+
             return response()->json(['message' => __('message.log_out')], 200);
         }
+
+        return response()->json(['message' => 'Logout failed.'], 400);
     }
-    public function forgetPassword(Request $request)
+
+    public function deleteUserAccount(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'mobile'=> 'required|mobile',
-        ]);
+        $id = auth()->id();
+        $user = User::find($id);
+        $message = __('message.not_found_entry', ['name' => __('message.account')]);
 
-        $response = Password::sendResetLink(
-            $request->only('email')
-        );
+        if ($user) {
+            $user->delete();
+            $message = __('message.account_deleted');
+            return response()->json(['message' => $message, 'status' => true], 200);
+        }
 
-        return $response == Password::RESET_LINK_SENT
-            ? response()->json(['message' => __($response), 'status' => true], 200)
-            : response()->json(['message' => __($response), 'status' => false], 400);
+        return response()->json(['message' => $message, 'status' => false], 404);
     }
+
+
 }

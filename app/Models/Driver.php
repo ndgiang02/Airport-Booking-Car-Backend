@@ -13,17 +13,18 @@ class Driver extends Model
         'user_id', 
         'license_no', 
         'rating', 
-        'available', 
-        'cab_id'
+        'available',
+        'latitude',
+        'longitude' 
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function vehicle()
     {
-        return $this->hasOne(Vehicle::class);
+        return $this->hasOne(Vehicle::class, 'driver_id', 'id');
     }
 }

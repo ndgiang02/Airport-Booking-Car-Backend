@@ -11,16 +11,17 @@ class Vehicle extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'driver_id',
         'vehicle_type',
+        'initial_starting_price',
         'rate_per_km',
         'license_plate',
         'seating_capacity',
         'initial_starting_price',
-        'image'
     ];
 
-    public function driver()
-    {
-        return $this->belongsTo(Driver::class);
-    }
+    protected $casts = [
+        'driver_id' => 'integer',
+    ];
+
 }

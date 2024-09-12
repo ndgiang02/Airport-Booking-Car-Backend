@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\ResetPasswordController;
+use App\Http\Controllers\OtpController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,29 +22,22 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-// Đăng ký người dùng
-Route::post('/register', [UserController::class, 'register']);
+Route::post('register', [UserController::class, 'register']);
 
-// Đăng ký tài xế
-Route::post('/driver-register', [UserController::class, 'driverRegister']);
+Route::post('driver-register', [UserController::class, 'driverRegister']);
 
-// Đăng nhập người dùng
-Route::post('/login', [UserController::class, 'login']);
+Route::post('login', [UserController::class, 'login']);
 
-// Lấy danh sách người dùng (Yêu cầu xác thực)
-Route::middleware('auth:sanctum')->get('/user-list', [UserController::class, 'userList']);
+Route::post('send-otp', [OtpController::class, 'sendOtp']);
 
-// Lấy thông tin chi tiết người dùng (Yêu cầu xác thực)
-Route::middleware('auth:sanctum')->get('/user-detail', [UserController::class, 'userDetail']);
+Route::post('reset-password-otp', [ResetPasswordController::class, 'resetPasswordWithOtp']);
 
-// Đổi mật khẩu người dùng (Yêu cầu xác thực)
-Route::middleware('auth:sanctum')->post('/change-password', [UserController::class, 'changePassword']);
-
-// Cập nhật thông tin người dùng (Yêu cầu xác thực)
-Route::middleware('auth:sanctum')->post('/update-profile', [UserController::class, 'updateProfile']);
-
-// Đăng xuất (Yêu cầu xác thực)
-Route::middleware('auth:sanctum')->post('/logout', [UserController::class, 'logout']);
-
-// Quên mật khẩu
-Route::post('/forgot-password', [UserController::class, 'forgetPassword']);
+Route::group(['middleware' => ['auth:sanctum']], function () {
+    Route::get('user-list', [UserController::class, 'userList']);
+    Route::get('user-detail', [UserController::class, 'userDetail']);
+    Route::post('update-profile', [UserController::class, 'updateProfile']);
+    Route::post('change-password', [UserController::class, 'changePassword']);
+    Route::post('update-user-status', [UserController::class, 'updateUserStatus']);
+    Route::post('delete-user-account', [UserController::class, 'deleteUserAccount']);
+    Route::post('logout', [UserController::class, 'logout']);
+});

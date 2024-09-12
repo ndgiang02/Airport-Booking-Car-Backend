@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('license_no', 50);
             $table->decimal('rating', 2, 1)->default(5.0);
             $table->boolean('available')->default(false);
-            $table->foreignId('vehicle_id')->nullable()->constrained()->onDelete('cascade');
+            $table->decimal('latitude', 10, 7)->nullable(); 
+            $table->decimal('longitude', 10, 7)->nullable(); 
             $table->timestamps();
             $table->softDeletes();
         });

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('mobile', 12);
             $table->string('password');
             $table->string('user_type');
+            $table->string('status')->default('active');
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

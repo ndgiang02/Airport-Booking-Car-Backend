@@ -2,10 +2,9 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DriverResource extends JsonResource
+class VehicleResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,12 +16,12 @@ class DriverResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
-            'license_no' => $this->license_no,
-            'rating' => $this->rating,
-            'available' => $this->available,
-            'vehicle_id' => $this->vehicle_id,
-            'token' => $this->token,
+            'name' => $this->name,
+            'email' => $this->email,
+            'mobile' => $this->mobile,
+            'user_type' => $this->user_type,
+            'status'=> $this->status,
+            'api->token' => $this->token,
         ];
     }
 }

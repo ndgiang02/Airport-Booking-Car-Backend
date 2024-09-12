@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('status')->default('active'); // Thêm cột status với giá trị mặc định là 'active'
+            $table->string('otp')->nullable();
+            $table->timestamp('otp_expires_at')->nullable();
         });
     }
 
@@ -22,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('status'); // Xóa cột status nếu rollback
+            $table->dropColumn(['otp', 'otp_expires_at']);
         });
     }
 };
