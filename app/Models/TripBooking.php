@@ -18,19 +18,24 @@ class TripBooking extends Model
         'to_address',
         'to_lat',
         'to_lng',
-        'from_date_time', 
-        'to_date_time',
+        'scheduled_time',
+        'from_time',    
+        'to_time',       
+        'return_time',
+        'round_trip',
         'km', 
         'total_amount', 
         'payment',
-        'status',
+        'trip_status',
     ];
 
     protected $casts = [
         'from_location' => 'array',
         'to_location' => 'array',
-        'from_date_time' => 'datetime',
-        'to_date_time' => 'datetime',
+        'scheduled_time' => 'datetime',
+        'from_time' => 'datetime',
+        'to_time' => 'datetime',
+        'return_time' => 'datetime',
         'fare' => 'decimal:2',
     ];
 
@@ -42,5 +47,10 @@ class TripBooking extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function stops()
+    {
+        return $this->hasMany(TripStop::class, 'trip_booking_id');
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\API\BookingController;
+use App\Http\Controllers\API\DriverController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
@@ -21,10 +23,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
 Route::post('register', [UserController::class, 'register']);
-
-Route::post('driver-register', [UserController::class, 'driverRegister']);
 
 Route::post('login', [UserController::class, 'login']);
 
@@ -33,6 +32,8 @@ Route::post('send-otp', [OtpController::class, 'sendOtp']);
 Route::post('reset-password-otp', [ResetPasswordController::class, 'resetPasswordWithOtp']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
+    Route::post('update-driver-location', [DriverController::class, 'updateDriverLocation']);
+    Route::post('create-booking', [BookingController::class, 'createBooking']);
     Route::get('user-list', [UserController::class, 'userList']);
     Route::get('user-detail', [UserController::class, 'userDetail']);
     Route::post('update-profile', [UserController::class, 'updateProfile']);

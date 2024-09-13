@@ -21,8 +21,9 @@ class DriverResource extends JsonResource
             'license_no' => $this->license_no,
             'rating' => $this->rating,
             'available' => $this->available,
-            'vehicle_id' => $this->vehicle_id,
-            'token' => $this->token,
+            'vehicle' => new VehicleResource($this->whenLoaded('vehicle')), 
+            'token'=>$this->token,
         ];
     }
 }
+

@@ -15,7 +15,8 @@ class Driver extends Model
         'rating', 
         'available',
         'latitude',
-        'longitude' 
+        'longitude',
+        'income'
     ];
 
     public function user()

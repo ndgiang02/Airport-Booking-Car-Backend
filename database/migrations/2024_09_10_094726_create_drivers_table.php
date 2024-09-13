@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
+            
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('license_no', 50);
-            $table->decimal('rating', 2, 1)->default(5.0);
+            $table->decimal('rating', 3, 1)->default(5.0);
             $table->boolean('available')->default(false);
-            $table->decimal('latitude', 10, 7)->nullable(); 
-            $table->decimal('longitude', 10, 7)->nullable(); 
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->decimal('wallet_balance', 10, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();
         });
-        
     }
 
     /**

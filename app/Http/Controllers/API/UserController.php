@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Driver;
@@ -11,75 +12,86 @@ use App\Http\Resources\UserResource;
 use App\Http\Resources\DriverResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 
 class UserController extends Controller
 {
-    /**
-     * Đăng ký người dùng
-     */
     public function register(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8',
-            'user_type' => 'nullable|in:customer,driver',
-            /*
-            'mobile' => [
-                'required',
-                'regex:/^(\+84|0)(3|5|7|8|9)[0-9]{8}$/'
-            ],
-            */
-            'mobile' => 'nullable|string|max:20|unique:users,mobile',
-            'license_no' => 'nullable|string|max:255',
+{
+    // Validate dữ liệu đầu vào
+    $validatedData = $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|min:8',
+        'mobile' => 'nullable|string|max:20|unique:users,mobile',
+        'user_type' => 'required|in:customer,driver',
+        // Nếu là tài xế, validate các thông tin phương tiện
+        'license_no' => 'required_if:user_type,driver|string|max:255',
+        'vehicle_type' => 'required_if:user_type,driver|string|max:255',
+        'license_plate' => 'required_if:user_type,driver|string|max:255|unique:vehicles,license_plate',
+        'seating_capacity' => 'required_if:user_type,driver|integer',
+        'brand' => 'required_if:user_type,driver|string|max:50',
+        'color' => 'required_if:user_type,driver|string|max:30',
+    ]);
+
+    $validatedData['password'] = Hash::make($validatedData['password']);
+
+    $user = User::create($validatedData);
+
+    if ($validatedData['user_type'] === 'customer') {
+
+        $customer = Customer::create([
+            'user_id' => $user->id,
+            'rating' => 5.0, 
         ]);
 
-        $validatedData['password'] = Hash::make($validatedData['password']);
-        if ($validatedData['user_type'] === 'driver') {
-            $validatedData['status'] = 'pending';
-            $validatedData['is_available'] = true;
-        }
-
-        $user = User::create($validatedData);
-
-        $user->assignRole($validatedData['user_type']);
-
-        if ($validatedData['user_type'] === 'driver') {
-            Driver::create([
-                'user_id' => $user->id,
-                'license_no' => $validatedData['license_no'],
-                'rating' => 5.0,
-                'available' => false,
-            ]);
-
-            // Nếu có chi tiết người dùng và tài khoản ngân hàng, có thể thêm sau
-            /*
-            if ($request->has('user_detail')) {
-                $user->userDetail()->create($request->user_detail);
-            }
-            if ($request->has('user_bank_account')) {
-                $user->userBankAccount()->create($request->user_bank_account);
-            }
-            // Tạo ví cho tài xế với số dư ban đầu là 0
-            $user->userWallet()->create(['total_amount' => 0]);
-            */
-        }
-
-        if ($validatedData['user_type'] === 'customer') {
-            Customer::create([
-                'user_id' => $user->id,
-                'rating' => 5.0,
-            ]);
-        }
-        $user->token = $user->createToken('auth_token')->plainTextToken;
-        $response = [
-            'message' => __('message.save_form', ['form' => __('message.' . $validatedData['user_type'])]),
-            'data' => new UserResource($user)
+        $data = [
+            'user' => new UserResource($user),
+            'customer' => $customer
         ];
 
-        return response()->json($response);
+    } elseif ($validatedData['user_type'] === 'driver') {
+        $driver = Driver::create([
+            'user_id' => $user->id,
+            'license_no' => $validatedData['license_no'],
+            'rating' => 5.0, 
+            'available' => false, 
+        ]);
+
+        $vehicleType = $validatedData['vehicle_type'];
+        $vehicleConfig = config("vehicle.types.$vehicleType");
+
+        if (!$vehicleConfig) {
+            return response()->json(['error' => 'Invalid vehicle type'], 400);
+        }
+
+        $startingPrice = $vehicleConfig['starting_price'];
+        $ratePerKm = $vehicleConfig['rate_per_km'];
+
+        $vehicle = Vehicle::create([
+            'driver_id' => $driver->id,
+            'vehicle_type' => $vehicleType,
+            'initial_starting_price' => $startingPrice,
+            'rate_per_km' => $ratePerKm,
+            'license_plate' => $validatedData['license_plate'],
+            'seating_capacity' => $validatedData['seating_capacity'],
+            'brand' => $validatedData['brand'],
+            'color' => $validatedData['color'],
+        ]);
+
+        $data = [
+            'user' => new UserResource($user),
+            'driver' => new DriverResource($driver->load('vehicle'))
+        ];
     }
+
+    $user->token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'User registered successfully',
+        'data' => $data
+    ], 201);
+}
+
 
 
     public function login(Request $request)
@@ -94,11 +106,14 @@ class UserController extends Controller
             }
 
             $user->token = $user->createToken('auth_token')->plainTextToken;
-            $response = new UserResource($user);
-
+            if ($user->user_type === 'driver') {
+                $user->driver->token = $user->token;
+                $response =  new DriverResource($user->driver->load('vehicle'));
+            } else {
+                $response = new UserResource($user);
+            }
             return response()->json(['data' => $response], 200);
         }
-
         return response()->json(['message' => __('auth.failed')], 400);
     }
 
@@ -243,13 +258,25 @@ class UserController extends Controller
         $message = __('message.not_found_entry', ['name' => __('message.account')]);
 
         if ($user) {
+            if ($user->user_type === 'driver') {
+                $driver = Driver::where('user_id', $user->id)->first();
+                if ($driver) {
+                    Vehicle::where('driver_id', $driver->id)->delete();
+                    $driver->delete();
+                }
+            }
+
+            if ($user->user_type === 'customer') {
+                Customer::where('user_id', $user->id)->delete();
+            }
             $user->delete();
+
             $message = __('message.account_deleted');
             return response()->json(['message' => $message, 'status' => true], 200);
         }
-
         return response()->json(['message' => $message, 'status' => false], 404);
     }
+
 
 
 }

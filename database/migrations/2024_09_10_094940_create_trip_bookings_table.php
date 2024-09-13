@@ -23,8 +23,11 @@ return new class extends Migration {
             $table->decimal('to_lat', 10, 5)->nullable();  
             $table->decimal('to_lng', 10, 5)->nullable();
 
-            $table->timestamp('from_date_time');
-            $table->timestamp('to_date_time');
+            $table->datetime('scheduled_time')->nullable();
+            $table->timestamp('from_time');
+            $table->timestamp('to_time');
+            $table->datetime('return_time')->nullable();
+            $table->boolean('round_trip')->default(false);
             $table->integer('km');       
             $table->decimal('total_amount', 10, 2)->nullable();
             $table->string('payment');

@@ -13,11 +13,12 @@ class Vehicle extends Model
     protected $fillable = [
         'driver_id',
         'vehicle_type',
+        'brand',
+        'color',
+        'seating_capacity',
+        'license_plate',
         'initial_starting_price',
         'rate_per_km',
-        'license_plate',
-        'seating_capacity',
-        'initial_starting_price',
     ];
 
     protected $casts = [

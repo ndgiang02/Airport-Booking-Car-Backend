@@ -1,0 +1,59 @@
+// Dang ki 
+{
+    "name": "ThUA",
+    "email": "muaha.vang03@gmail.com",
+    "password": "password123",
+    "mobile": "03666666666"
+  }
+
+  //Dang ki tai xe
+  {
+    {
+        "name": "Jane Smith",
+        "email": "janesmith@example.com",
+        "password": "password123",
+        "mobile": "0987654321",
+        "user_type": "driver",
+        "license_no": "ABC123456",
+        "vehicle_type": "sedan",
+        "license_plate": "79A-12345",
+        "seating_capacity": 5,
+        "brand": "Toyota",
+        "color": "Black"
+    }
+    
+}
+
+//up date driver location
+{
+    "latitude": 10.7769,
+    "longitude": 106.70098
+}
+
+
+
+
+// Tao chuyen
+{
+    "customer_id": 1,
+    "from_address": "123 Nguyen Hue, District 1, HCMC",
+    "from_lat": 10.7870067,
+    "from_lng": 106.6380877,
+    "to_address": "456 Tran Hung Dao, District 5, HCMC",
+    "to_lat": 10.762622,
+    "to_lng": 106.660172,
+    "scheduled_time": "2024-09-13 14:30:00",
+    "km": 15,
+    "total_amount": 150000,
+    "payment": "cash",
+    "round_trip": true,
+    "return_time": "2024-09-13 17:30:00",
+    "stops": [
+        {
+            "stop_address": "789 Le Loi, District 1, HCMC",
+            "stop_lat": 10.7778,
+            "stop_lng": 106.6957,
+            "stop_order": 1
+        }
+    ]
+}
