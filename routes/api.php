@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\BookingController;
 use App\Http\Controllers\API\DriverController;
+use App\Http\Controllers\API\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
@@ -39,6 +40,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('update-profile', [UserController::class, 'updateProfile']);
     Route::post('change-password', [UserController::class, 'changePassword']);
     Route::post('update-user-status', [UserController::class, 'updateUserStatus']);
-    Route::post('delete-user-account', [UserController::class, 'deleteUserAccount']);
+    Route::delete('delete-user-account', [UserController::class, 'deleteUserAccount']);
+    //Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
     Route::post('logout', [UserController::class, 'logout']);
 });
+    Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);

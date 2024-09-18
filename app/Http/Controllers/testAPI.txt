@@ -4,6 +4,7 @@
     "email": "muaha.vang03@gmail.com",
     "password": "password123",
     "mobile": "03666666666"
+    "user_type":"customer"
   }
 
   //Dang ki tai xe

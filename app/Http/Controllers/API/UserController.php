@@ -12,87 +12,89 @@ use App\Http\Resources\UserResource;
 use App\Http\Resources\DriverResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
+
+    
     public function register(Request $request)
-{
-    // Validate dữ liệu đầu vào
-    $validatedData = $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users,email',
-        'password' => 'required|min:8',
-        'mobile' => 'nullable|string|max:20|unique:users,mobile',
-        'user_type' => 'required|in:customer,driver',
-        // Nếu là tài xế, validate các thông tin phương tiện
-        'license_no' => 'required_if:user_type,driver|string|max:255',
-        'vehicle_type' => 'required_if:user_type,driver|string|max:255',
-        'license_plate' => 'required_if:user_type,driver|string|max:255|unique:vehicles,license_plate',
-        'seating_capacity' => 'required_if:user_type,driver|integer',
-        'brand' => 'required_if:user_type,driver|string|max:50',
-        'color' => 'required_if:user_type,driver|string|max:30',
-    ]);
-
-    $validatedData['password'] = Hash::make($validatedData['password']);
-
-    $user = User::create($validatedData);
-
-    if ($validatedData['user_type'] === 'customer') {
-
-        $customer = Customer::create([
-            'user_id' => $user->id,
-            'rating' => 5.0, 
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+            'mobile' => 'nullable|string|max:20|unique:users,mobile',
+            'user_type' => 'required|in:customer,driver',
+            'license_no' => 'required_if:user_type,driver|string|max:255',
+            'vehicle_type' => 'required_if:user_type,driver|string|max:255',
+            'license_plate' => 'required_if:user_type,driver|string|max:255|unique:vehicles,license_plate',
+            'seating_capacity' => 'required_if:user_type,driver|integer',
+            'brand' => 'required_if:user_type,driver|string|max:50',
+            'color' => 'required_if:user_type,driver|string|max:30',
         ]);
 
-        $data = [
-            'user' => new UserResource($user),
-            'customer' => $customer
-        ];
+        $validatedData['password'] = Hash::make($validatedData['password']);
 
-    } elseif ($validatedData['user_type'] === 'driver') {
-        $driver = Driver::create([
-            'user_id' => $user->id,
-            'license_no' => $validatedData['license_no'],
-            'rating' => 5.0, 
-            'available' => false, 
-        ]);
+        $validatedData['status'] = $validatedData['user_type'] === 'customer' ? 'active' : 'pending';
 
-        $vehicleType = $validatedData['vehicle_type'];
-        $vehicleConfig = config("vehicle.types.$vehicleType");
+        $user = User::create($validatedData);
 
-        if (!$vehicleConfig) {
-            return response()->json(['error' => 'Invalid vehicle type'], 400);
+        if ($validatedData['user_type'] === 'customer') {
+
+            $customer = Customer::create([
+                'user_id' => $user->id,
+                'rating' => 5.0,
+            ]);
+
+            $data = [
+                'user' => new UserResource($user),
+                'customer' => $customer
+            ];
+
+        } elseif ($validatedData['user_type'] === 'driver') {
+            $driver = Driver::create([
+                'user_id' => $user->id,
+                'license_no' => $validatedData['license_no'],
+                'rating' => 5.0,
+                'available' => false,
+            ]);
+
+            $vehicleType = $validatedData['vehicle_type'];
+            $vehicleConfig = config("vehicle.types.$vehicleType");
+
+            if (!$vehicleConfig) {
+                return response()->json(['error' => 'Invalid vehicle type'], 400);
+            }
+
+            $startingPrice = $vehicleConfig['starting_price'];
+            $ratePerKm = $vehicleConfig['rate_per_km'];
+
+            $vehicle = Vehicle::create([
+                'driver_id' => $driver->id,
+                'vehicle_type' => $vehicleType,
+                'initial_starting_price' => $startingPrice,
+                'rate_per_km' => $ratePerKm,
+                'license_plate' => $validatedData['license_plate'],
+                'seating_capacity' => $validatedData['seating_capacity'],
+                'brand' => $validatedData['brand'],
+                'color' => $validatedData['color'],
+            ]);
+
+            $data = [
+                'user' => new UserResource($user),
+                'driver' => new DriverResource($driver->load('vehicle'))
+            ];
         }
 
-        $startingPrice = $vehicleConfig['starting_price'];
-        $ratePerKm = $vehicleConfig['rate_per_km'];
+        $user->token = $user->createToken('auth_token')->plainTextToken;
 
-        $vehicle = Vehicle::create([
-            'driver_id' => $driver->id,
-            'vehicle_type' => $vehicleType,
-            'initial_starting_price' => $startingPrice,
-            'rate_per_km' => $ratePerKm,
-            'license_plate' => $validatedData['license_plate'],
-            'seating_capacity' => $validatedData['seating_capacity'],
-            'brand' => $validatedData['brand'],
-            'color' => $validatedData['color'],
-        ]);
-
-        $data = [
-            'user' => new UserResource($user),
-            'driver' => new DriverResource($driver->load('vehicle'))
-        ];
+        return response()->json([
+            'message' => 'User registered successfully',
+            'data' => $data,
+            'status' => true
+        ], 201);
     }
-
-    $user->token = $user->createToken('auth_token')->plainTextToken;
-
-    return response()->json([
-        'message' => 'User registered successfully',
-        'data' => $data
-    ], 201);
-}
-
-
 
     public function login(Request $request)
     {
@@ -102,19 +104,35 @@ class UserController extends Controller
             $user = Auth::user();
 
             if ($user->status === 'banned') {
-                return response()->json(['message' => __('message.account_banned')], 400);
+                return response()->json(['message' => __('message.account_banned')], 403);
+            }
+
+            if ($request->has('device_token')) {
+                if ($user->user_type === 'driver') {
+                    $user->driver->device_token = $request->device_token;
+                    $user->driver->save();
+                } elseif ($user->user_type === 'customer') {
+                    $user->customer->device_token = $request->device_token;
+                    $user->customer->save();
+                }
             }
 
             $user->token = $user->createToken('auth_token')->plainTextToken;
             if ($user->user_type === 'driver') {
                 $user->driver->token = $user->token;
-                $response =  new DriverResource($user->driver->load('vehicle'));
+                $response = new DriverResource($user->driver->load('vehicle'));
             } else {
                 $response = new UserResource($user);
             }
-            return response()->json(['data' => $response], 200);
+            return response()->json([
+                'data' => $response,
+                'status' => true,
+            ], 200);
         }
-        return response()->json(['message' => __('auth.failed')], 400);
+        return response()->json([
+            'status' => false,
+            'message' => __('auth.failed')
+        ], 401);
     }
 
     public function userList(Request $request)
@@ -153,23 +171,26 @@ class UserController extends Controller
     {
         $request->validate([
             'old_password' => 'required',
-            'new_password' => 'required|min:6|confirmed',
+            'new_password' => 'required|min:8|confirmed',
         ]);
 
         $user = Auth::user();
 
         if (!Hash::check($request->old_password, $user->password)) {
-            return response()->json(['message' => __('message.valid_password')], 400);
+            return response()->json(['message' => __('message.valid_password')], 422);
         }
 
         if (Hash::check($request->new_password, $user->password)) {
-            return response()->json(['message' => __('message.old_new_pass_same')], 400);
+            return response()->json(['message' => __('message.old_new_pass_same')], 422);
         }
 
         $user->password = Hash::make($request->new_password);
         $user->save();
 
-        return response()->json(['message' => __('message.password_change')], 200);
+        return response()->json([
+            'status' => true,
+            'message' => __('message.password_change')
+        ], 200);
     }
 
     /*
@@ -251,6 +272,7 @@ class UserController extends Controller
         return response()->json(['message' => 'Logout failed.'], 400);
     }
 
+
     public function deleteUserAccount(Request $request)
     {
         $id = auth()->id();
@@ -277,6 +299,40 @@ class UserController extends Controller
         return response()->json(['message' => $message, 'status' => false], 404);
     }
 
+    public function resetPasswordWithOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|numeric',
+            'new_password' => 'required|string|confirmed',
+        ]);
 
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || $user->otp != $request->otp || Carbon::now()->gt($user->otp_expires_at)) {
+            return response()->json([
+                'message' => 'Invalid or expired OTP.',
+                'status' => false
+            ], 400);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->otp = null;
+        $user->otp_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password reset successfully.',
+            'status' => true
+        ], 200);
+    }
+
+    public function updateDeviceToken(Request $request)
+    {
+        $user = auth()->user();
+        $user->device_token = $request->device_token;
+        $user->save();
+        return response()->json(['status' => 'success', 'message' => 'Device token updated successfully!']);
+    }
 
 }

@@ -27,6 +27,7 @@ class TripBooking extends Model
         'total_amount', 
         'payment',
         'trip_status',
+        'trip_type',
     ];
 
     protected $casts = [

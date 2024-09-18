@@ -21,6 +21,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->decimal('wallet_balance', 10, 2)->default(0);
+            $table->string('device_token')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
