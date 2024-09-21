@@ -10,9 +10,9 @@ class TripStopResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'stop_address' => $this->stop_address,
-            'stop_lat' => $this->stop_lat,
-            'stop_lng' => $this->stop_lng,
+            'stop_address' => $this->address,
+            'stop_lat' => $this->latitude,
+            'stop_lng' => $this->longitude,
             'stop_order' => $this->stop_order,
         ];
     }

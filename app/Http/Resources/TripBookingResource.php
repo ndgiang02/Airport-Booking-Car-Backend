@@ -11,7 +11,6 @@ class TripBookingResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'driver' => $this->driver,
             'customer' => $this->customer,
             'from_address' => $this->from_address,
             'from_lat' => $this->from_lat,
@@ -28,7 +27,11 @@ class TripBookingResource extends JsonResource
             'status' => $this->status,
             'is_round_trip' => $this->is_round_trip,
             'stops' => TripStopResource::collection($this->stops),
-            'vehicle' => new VehicleResource($this->driver->vehicle),
+            'driver' => $this->driver ? [
+                'id' => $this->driver->id,
+                'name' => $this->driver->name,
+                'vehicle' => $this->driver->vehicle ? $this->driver->vehicle->toArray() : null, 
+            ] : null,
         ];
     }
 }

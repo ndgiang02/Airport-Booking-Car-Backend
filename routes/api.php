@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\BookingController;
 use App\Http\Controllers\API\DriverController;
 use App\Http\Controllers\API\NotificationController;
+use App\Http\Controllers\API\VehiclesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
@@ -34,14 +35,18 @@ Route::post('reset-password-otp', [ResetPasswordController::class, 'resetPasswor
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('update-driver-location', [DriverController::class, 'updateDriverLocation']);
-    Route::post('create-booking', [BookingController::class, 'createBooking']);
+    Route::post('trip-booking', [BookingController::class, 'tripBooking']);
     Route::get('user-list', [UserController::class, 'userList']);
     Route::get('user-detail', [UserController::class, 'userDetail']);
     Route::post('update-profile', [UserController::class, 'updateProfile']);
     Route::post('change-password', [UserController::class, 'changePassword']);
     Route::post('update-user-status', [UserController::class, 'updateUserStatus']);
     Route::delete('delete-user-account', [UserController::class, 'deleteUserAccount']);
+    Route::get('fetch-trips', [BookingController::class, 'getTrips']);
+    //Route::get('vehicle-types', [VehiclesController::class, 'getVehicleTypes']);
     //Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
     Route::post('logout', [UserController::class, 'logout']);
 });
     Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
+
+    Route::get('vehicle-types', [VehiclesController::class, 'getVehicleTypes']);

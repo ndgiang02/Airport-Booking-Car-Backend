@@ -12,17 +12,20 @@ class Vehicle extends Model
 
     protected $fillable = [
         'driver_id',
-        'vehicle_type',
+        'vehicle_type_id',
         'brand',
         'color',
-        'seating_capacity',
         'license_plate',
-        'initial_starting_price',
-        'rate_per_km',
     ];
 
     protected $casts = [
         'driver_id' => 'integer',
+        'vehicle_type_id' => 'integer'
     ];
+
+    public function vehicleType()
+    {
+        return $this->belongsTo(VehicleType::class);
+    }
 
 }

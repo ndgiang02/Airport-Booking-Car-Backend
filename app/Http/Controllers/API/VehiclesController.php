@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\api\v1;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\VehicleType;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class VehicleController extends Controller
+class VehiclesController extends Controller
 {
     protected $limit;
 
@@ -36,28 +37,51 @@ class VehicleController extends Controller
     public function registerVehicle(Request $request)
     {
         $request->validate([
-            'driver_id' => 'required|integer',
-            'vehicle_type' => 'required|string',
-            'initial_starting_price' => 'required|numeric',
-            'rate_per_km' => 'required|numeric',
-            'license_plate' => 'required|string|unique:vehicles',
+            'vehicle_type_id' => 'required|exists:vehicle_types,id',
+            'brand' => 'required|string',
+            'color' => 'required|string',
             'seating_capacity' => 'required|integer',
+            'license_plate' => 'required|string|unique:vehicles',
         ]);
 
         $vehicle = Vehicle::create([
-            'driver_id' => $request->driver_id,
-            'vehicle_type' => $request->vehicle_type,
-            'initial_starting_price' => $request->initial_starting_price,
-            'rate_per_km' => $request->rate_per_km,
-            'license_plate' => $request->license_plate,
-            'seating_capacity' => $request->seating_capacity,
+            'driver_id' => auth()->id(),
+            'vehicle_type_id' => $request->input('vehicle_type_id'),
+            'brand' => $request->input('brand'),
+            'color' => $request->input('color'),
+            'seating_capacity' => $request->input('seating_capacity'),
+            'license_plate' => $request->input('license_plate'),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Vehicle registered successfully',
-            'vehicle' => $vehicle
-        ], 201);
+            'message' => 'Vehicle register successful.',
+            'data' => $vehicle
+        ]);
+    }
+
+    /**
+     * Lay cau hinh phuong tien
+     * 
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getVehicleTypes()
+    {
+    
+        $vehicleTypes = VehicleType::all(['id', 'name', 'seating_capacity', 'starting_price', 'rate_per_km', 'image']);
+
+        $vehicleTypes->transform(function ($vehicleType) {
+            $vehicleType->image_url = $vehicleType->image ? asset('storage/' . $vehicleType->image) : null;
+            return $vehicleType;
+        });
+
+        return response()->json([
+            'message'=>"Get vehicle succesfully",
+            'status' => true,
+            'data' => $vehicleTypes
+        ], 200);
     }
 
     /**
@@ -114,7 +138,6 @@ class VehicleController extends Controller
     }
 
     /**
-     * Xóa mềm phương tiện (Soft delete).
      *
      * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
@@ -136,7 +159,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Khôi phục phương tiện đã bị xóa mềm.
+     * 
      *
      * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
@@ -158,7 +181,7 @@ class VehicleController extends Controller
     }
 
     /**
-     * Lấy danh sách các phương tiện đã bị xóa mềm.
+     *
      *
      * @return \Illuminate\Http\JsonResponse
      */

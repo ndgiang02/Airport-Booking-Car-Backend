@@ -39,18 +39,12 @@ class DriverController extends Controller
 				'message' => 'Trip not found'
 			], 404);
 		}
-
-		// Ensure the trip can be accepted only if it is in the 'requested' status
 		if ($trip->status !== 'requested') {
 			return response()->json([
 				'message' => 'Trip cannot be accepted'
 			], 400);
 		}
-
-		// Get the authenticated driver (Assuming authentication is already handled)
 		$driver = auth()->user();
-
-		// Check if the user is a driver
 		if (!$driver || $driver->user_type !== 'driver') {
 			return response()->json([
 				'message' => 'Only drivers can accept trips'

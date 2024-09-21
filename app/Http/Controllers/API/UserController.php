@@ -115,6 +115,8 @@ class UserController extends Controller
                     $user->customer->device_token = $request->device_token;
                     $user->customer->save();
                 }
+
+                $this->sendDeviceTokenNotification($user, $request->device_token);
             }
 
             $user->token = $user->createToken('auth_token')->plainTextToken;
