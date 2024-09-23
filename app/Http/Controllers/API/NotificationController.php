@@ -6,8 +6,6 @@ use Kreait\Firebase\Messaging\CloudMessage;
 use App\Http\Controllers\Controller;
 use Kreait\Firebase\Messaging\Notification;
 use Kreait\Firebase\Factory;
-use Kreait\Firebase\Exception\FirebaseException;
-use Kreait\Firebase\Messaging;
 use Illuminate\Http\Request;
 use App\Models\Customer;
 
@@ -17,16 +15,7 @@ class NotificationController extends Controller
 
     public function __construct()
     {
-        $path = base_path('storage/app/push-notification.json');
-
-        if (!file_exists($path)) {
-            abort(500, 'JSON Not found.');
-        }
-
-        $factory = (new Factory)
-            ->withServiceAccount($path)
-            ->withProjectId('push-notification-259d6');
-
+        $factory = (new Factory) ->withServiceAccount(base_path(env('FIREBASE_CREDENTIALS')));
         $this->firebaseMessaging = $factory->createMessaging();
     }
 

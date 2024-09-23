@@ -22,7 +22,6 @@ class DriverResource extends JsonResource
             'rating' => $this->rating,
             'available' => $this->available,
             'vehicle' => new VehicleResource($this->whenLoaded('vehicle')), 
-            'token'=>$this->token,
         ];
     }
 }

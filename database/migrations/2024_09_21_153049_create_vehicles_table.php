@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('driver_id');
             $table->unsignedBigInteger('vehicle_type_id');
             $table->string('brand', 50);
+            $table->string('model', 50);
             $table->string('color', 30);
             $table->string('license_plate', 20);
             $table->timestamps();

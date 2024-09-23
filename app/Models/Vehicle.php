@@ -14,6 +14,7 @@ class Vehicle extends Model
         'driver_id',
         'vehicle_type_id',
         'brand',
+        'model',
         'color',
         'license_plate',
     ];

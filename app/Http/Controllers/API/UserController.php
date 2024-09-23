@@ -17,7 +17,37 @@ use Carbon\Carbon;
 class UserController extends Controller
 {
 
-    
+    public function registerCustomer(Request $request)
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+            'mobile' => 'nullable|string|max:20|unique:users,mobile',
+        ]);
+
+        $validatedData['password'] = Hash::make($validatedData['password']);
+        $validatedData['status'] = 'active';
+
+        $user = User::create($validatedData);
+
+        $customer = Customer::create([
+            'user_id' => $user->id,
+            'rating' => 5.0,
+        ]);
+
+        $user->token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Customer registered successfully',
+            'data' => [
+                'user' => new UserResource($user),
+                'customer' => $customer
+            ],
+            'status' => true
+        ], 201);
+    }
+
     public function register(Request $request)
     {
         $validatedData = $request->validate([
@@ -27,9 +57,8 @@ class UserController extends Controller
             'mobile' => 'nullable|string|max:20|unique:users,mobile',
             'user_type' => 'required|in:customer,driver',
             'license_no' => 'required_if:user_type,driver|string|max:255',
-            'vehicle_type' => 'required_if:user_type,driver|string|max:255',
+            'vehicle_type_id' => 'required_if:user_type,driver|string|max:255',
             'license_plate' => 'required_if:user_type,driver|string|max:255|unique:vehicles,license_plate',
-            'seating_capacity' => 'required_if:user_type,driver|integer',
             'brand' => 'required_if:user_type,driver|string|max:50',
             'color' => 'required_if:user_type,driver|string|max:30',
         ]);
@@ -115,20 +144,27 @@ class UserController extends Controller
                     $user->customer->device_token = $request->device_token;
                     $user->customer->save();
                 }
-
-                $this->sendDeviceTokenNotification($user, $request->device_token);
             }
 
-            $user->token = $user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('auth_token')->plainTextToken;
+
             if ($user->user_type === 'driver') {
                 $user->driver->token = $user->token;
-                $response = new DriverResource($user->driver->load('vehicle'));
+                $response = [
+                    'user' => new UserResource($user), 
+                    'driver' => new DriverResource($user->driver->load('vehicle')),
+                    'token' => $token
+                ];
             } else {
-                $response = new UserResource($user);
+                $response = [
+                    'user' => new UserResource($user), 
+                    'token' => $token
+                ];
             }
             return response()->json([
-                'data' => $response,
+                'message' => __('login.succesful'),
                 'status' => true,
+                'data' => $response,
             ], 200);
         }
         return response()->json([

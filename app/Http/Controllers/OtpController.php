@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 
 class OtpController extends Controller
 {
@@ -36,7 +38,7 @@ class OtpController extends Controller
 
         $otp = rand(1000, 9999);
         $user->otp = $otp;
-        $user->otp_expires_at = Carbon::now()->addMinutes(10);
+        $user->otp_expires_at = Carbon::now()->addMinutes(5);
         $user->save();
 
         Mail::to($user->email)->send(new OtpMail($otp));
@@ -47,4 +49,5 @@ class OtpController extends Controller
             'status' => true
         ], 200);
     }
+
 }

@@ -62,4 +62,114 @@
 
 php artisan storage:link
  php artisan db:seed
+
+
+ 4D7Y4GAEXDE1PBN9J1F7789F
+
+
+
+ {
+    "message": "Register successful",
+    "status": true,
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@example.com",
+            "mobile": "0123456789",
+            "user_type": "driver",
+            "status": "active",
+            "token": null
+        },
+        "driver": {
+            "id": 1,
+            "user_id": 1,
+            "license_no": "D123456",
+            "rating": 5,
+            "available": false,
+            "vehicle": {
+                "driver_id": 1,
+                "vehicle_type_id": 1,
+                "brand": "Toyota",
+                "color": "Black",
+                "license_plate": "ABC123",
+                "vehicle_type": {
+                    "id": 1,
+                    "type": "hatchback",
+                    "name": "HATCHBACK",
+                    "seating_capacity": 4,
+                    "starting_price": "15000.00",
+                    "rate_per_km": "7000.00",
+                    "image": "http://localhost:8000/storage/image_vehicle/hatback.png"
+                }
+            }
+        }
+    }
+}
+
+
+
+
+{
+    "name": "Nguyen Duy Giang",
+    "email": "caugiang0210@gmail.com",
+    "password": "03214563",
+    "mobile": "0847111862",
+    "user_type": "driver",
+    "license_no": "TET02103 ",
+    "vehicle_type_id": 2    ,
+    "license_plate": "30K-888.66",
+    "model":"Camry",
+    "brand": "Toyota",
+    "color": "Black"
+}
+
+
+{
+    "message": "Register successful",
+    "status": true,
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "Nguyen Duy Giang",
+            "email": "caugiang0210@gmail.com",
+            "mobile": "0847111862",
+            "user_type": "driver",
+            "status": "active",
+            "token": "1|UfuKkULPxEmExWrmpYiYd8niDQ0yc6lJwsVYx9mS72615b81"
+        },
+        "token": "1|UfuKkULPxEmExWrmpYiYd8niDQ0yc6lJwsVYx9mS72615b81",
+        "driver": {
+            "id": 1,
+            "user_id": 1,
+            "license_no": "TET02103",
+            "rating": 5,
+            "available": false,
+            "vehicle": {
+                "driver_id": 1,
+                "vehicle_type_id": 2,
+                "brand": "Toyota",
+                "model": "Camry",
+                "color": "Black",
+                "license_plate": "30K-888.66",
+                "vehicle_type": {
+                    "id": 2,
+                    "type": "sedan",
+                    "name": "SEDAN",
+                    "seating_capacity": 4,
+                    "starting_price": "20000.00",
+                    "rate_per_km": "8000.00",
+                    "image": "http://localhost:8000/storage/image_vehicle/sedan.png"
+                }
+            }
+        }
+    }
+}
+
+
+
+Cảng Hàng Không Quốc Tế Tân Sơn Nhất Ga Quốc Nội Phường 2, Quận Tân Bình, Thành Phố Hồ Chí Minh, to_lat: 10.813373, to_lng: 106.662531
+
+Cảng Hàng Không Quốc Tế Nội Bài Ga Hàng Hóa Xã Phú Minh, Huyện Sóc Sơn, Thành Phố Hà Nội, to_lat: 21.211425, to_lng: 105.809189
+
  
