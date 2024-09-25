@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use Kreait\Firebase\Messaging\Notification;
 use Kreait\Firebase\Factory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Models\Customer;
+use Google\Client;
 
 class NotificationController extends Controller
 {
@@ -15,10 +17,50 @@ class NotificationController extends Controller
 
     public function __construct()
     {
-        $factory = (new Factory) ->withServiceAccount(base_path(env('FIREBASE_CREDENTIALS')));
+        $factory = (new Factory)->withServiceAccount(base_path(env('FIREBASE_CREDENTIALS')));
         $this->firebaseMessaging = $factory->createMessaging();
     }
 
+    public function sendNotification($fcmToken, $notificationData)
+    {
+        $serviceAccountPath = base_path(env('FIREBASE_CREDENTIALS'));
+
+        $client = new Client();
+        $client->setAuthConfig($serviceAccountPath);
+        $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
+
+        $accessToken = $client->fetchAccessTokenWithAssertion()['access_token'];
+
+        $projectId = 'push-notification-259d6'; 
+        $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+
+        $fields = [
+            'message' => [
+                'token' => $fcmToken,
+                'notification' => $notificationData['notification'],
+                'data' => $notificationData['data'],
+            ],
+        ];
+
+        $headers = [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json',
+        ];
+
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+        $response = curl_exec($ch);
+        Log::info('FCM Response: ' . $response);
+
+        curl_close($ch);
+
+        return $response;
+    }
 
     public function sendNotificationToAllUsers(Request $request)
     {
@@ -56,6 +98,8 @@ class NotificationController extends Controller
             ], 500);
         }
     }
+
+
 
 }
 

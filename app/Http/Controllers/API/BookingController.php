@@ -8,6 +8,7 @@ use App\Models\TripBooking;
 use App\Models\Driver;
 use App\Http\Resources\TripBookingResource;
 use App\Http\Resources\DriverResource;
+use App\Jobs\FindNearestDriverJob;
 use Carbon\Carbon;
 use Validator;
 
@@ -144,7 +145,7 @@ class BookingController extends Controller
             'km' => $request->km,
             'total_amount' => $request->total_amount,
             'payment' => $request->payment,
-            'status' => 'requested',
+            'trip_status' => 'requested',
             'round_trip' => $request->round_trip,
         ]);
 
@@ -160,12 +161,47 @@ class BookingController extends Controller
             }
         }
 
+        FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(5));
+
         return response()->json([
             'status' => true,
             'message' => 'Trip booking created successfully without a driver.',
-            'data' => new TripBookingResource($tripBooking),
+            'data' => $tripBooking,
         ], 201);
     }
+
+    /*
+    public function scheduleTrip(Request $request)
+    {
+        $request->validate([
+            'pickup_latitude' => 'required|numeric',
+            'pickup_longitude' => 'required|numeric',
+            'customer_id' => 'required|integer',
+            'scheduled_time' => 'required|date',
+            'from_address' => 'required|string',
+            'to_address' => 'required|string',
+            'to_lat' => 'required|numeric',
+            'to_lng' => 'required|numeric',
+        ]);
+
+        $trip = new TripBooking();
+        $trip->from_lat = $request->input('pickup_latitude');
+        $trip->from_lng = $request->input('pickup_longitude');
+        $trip->customer_id = $request->input('customer_id');
+        $trip->scheduled_time = $request->input('scheduled_time');
+        $trip->from_address = $request->input('from_address');
+        $trip->to_address = $request->input('to_address');
+        $trip->to_lat = $request->input('to_lat');
+        $trip->to_lng = $request->input('to_lng');
+        $trip->trip_status = 'pending';
+        $trip->save();
+
+
+        FindNearestDriverJob::dispatch($trip)->delay(now()->addMinutes(5));
+
+        return response()->json(['message' => 'Trip scheduled successfully', 'trip' => $trip], 201);
+    }
+    */
 
 
     public function getTrips(Request $request)

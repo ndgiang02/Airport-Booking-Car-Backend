@@ -44,6 +44,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('update-user-status', [UserController::class, 'updateUserStatus']);
     Route::delete('delete-user-account', [UserController::class, 'deleteUserAccount']);
     Route::get('fetch-trips', [BookingController::class, 'getTrips']);
+
+
+    Route::post('driver/update-status', [DriverController::class, 'updateStatus']);
+    Route::post('driver/update-location', [DriverController::class, 'updateLocation']);
+
     //Route::get('vehicle-types', [VehiclesController::class, 'getVehicleTypes']);
     //Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
     Route::post('logout', [UserController::class, 'logout']);

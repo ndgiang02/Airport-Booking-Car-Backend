@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Driver;
 use App\Models\Vehicle;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\DriverResource;
 use Illuminate\Support\Facades\Hash;
 use App\Models\TripBooking;
 use Illuminate\Http\Request;
+use App\Events\DriverLocationUpdated;
+use Illuminate\Support\Facades\Log;
 use DB;
 
 class DriverController extends Controller
@@ -71,14 +74,75 @@ class DriverController extends Controller
 		);
 	}
 
+	/**
+	 *update status
+	 */
+	public function updateStatus(Request $request)
+	{
+		$request->validate([
+			'available' => 'required|boolean',
+		]);
+
+		$user = auth()->user();
+    	$driver = Driver::where('user_id', $user->id)->first();
+
+		if ($driver) {
+			$driver->available = $request->available;
+			$driver->save();
+
+			broadcast(new DriverLocationUpdated($driver->id, $driver->latitude, $driver->longitude));
+
+			return response()->json([
+				'status' => true,
+				'message' => 'successfully.',
+				'data' => [
+					'available' => $driver->available
+				]
+			], 200);
+		}
+		return response()->json(['status' => false, 'message' => 'Unauthorized'], 401);
+	}
+
+
+	public function updateLocation(Request $request)
+	{
+
+		Log::info("Received request to update location: ", ['available' => $request->input('available')]);
+		$request->validate([
+			'latitude' => 'required|numeric',
+			'longitude' => 'required|numeric',
+		]);
+
+		$user = auth()->user();
+    	$driver = Driver::where('user_id', $user->id)->first();
+
+		if ($driver) {
+			$driver->latitude = $request->latitude;
+			$driver->longitude = $request->longitude;
+			$driver->save();
+			Log::info("Received request to update new location: ", ['latitude' => $driver->latitude, 'longitude' => $driver->longitude ]);
+			//broadcast(new DriverLocationUpdated($driver->id, $driver->latitude, $driver->longitude));
+			return response()->json([
+				'status' => true,
+				'message' => 'successfully.',
+				'data' => [
+					'driver' => $driver
+				]
+			], 200);
+		}
+		return response()->json([
+			'success' => false,
+			'message' => 'fail.',
+		], 401);
+	}
+
+	
 
 
 	public function acceptTrip($tripId)
 	{
-		// Find the trip using the trip ID
 		$trip = TripBooking::find($tripId);
 
-		// Check if the trip exists
 		if (!$trip) {
 			return response()->json([
 				'message' => 'Trip not found'
@@ -242,36 +306,6 @@ class DriverController extends Controller
 			'monthly_income' => $monthlyIncome
 		], 200);
 	}
-
-	public function updateDriverLocation(Request $request)
-	{
-		$validatedData = $request->validate([
-			'latitude' => 'required|numeric|between:-90,90',
-			'longitude' => 'required|numeric|between:-180,180',
-		]);
-
-		$driver = auth()->user()->driver;
-
-		if (!$driver) {
-			return response()->json([
-				'message' => 'Driver not found'
-			], 404);
-		}
-
-		$driver->latitude = $validatedData['latitude'];
-		$driver->longitude = $validatedData['longitude'];
-		$driver->save();
-
-		return response()->json([
-			'message' => 'Driver location updated successfully',
-			'data' => [
-				'driver_id' => $driver->id,
-				'latitude' => $driver->latitude,
-				'longitude' => $driver->longitude,
-			]
-		], 200);
-	}
-
 
 
 }

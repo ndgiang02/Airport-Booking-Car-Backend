@@ -173,3 +173,26 @@ Cảng Hàng Không Quốc Tế Tân Sơn Nhất Ga Quốc Nội Phường 2, Qu
 Cảng Hàng Không Quốc Tế Nội Bài Ga Hàng Hóa Xã Phú Minh, Huyện Sóc Sơn, Thành Phố Hà Nội, to_lat: 21.211425, to_lng: 105.809189
 
  
+{
+    "customer_id": 1,
+    "from_address": "123 Main Street",
+    "from_lat": 10.762622,
+    "from_lng": 106.660172,
+    "to_address": "456 Elm Street",
+    "to_lat": 10.780000,
+    "to_lng": 106.700000,
+    "scheduled_time": "2024-09-30 15:00:00",
+    "km": 15.5,
+    "total_amount": 150.0,
+    "payment": "cash",
+    "round_trip": true,
+    "return_time": "2024-09-30 17:00:00",
+    "stops": [
+        {
+            "stop_address": "789 Oak Street",
+            "stop_lat": 10.770000,
+            "stop_lng": 106.680000,
+            "stop_order": 1
+        }
+    ]
+}
