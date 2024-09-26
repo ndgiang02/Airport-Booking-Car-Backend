@@ -14,7 +14,7 @@ services:
 
   db:
     image: 'mysql:8.0'
-    container_name: booking-app-backend-db
+    container_name: db
     volumes:
       - dbdata:/var/lib/mysql
     environment:

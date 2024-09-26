@@ -77,9 +77,10 @@ class FindNearestDriverJob implements ShouldQueue
                 'body' => 'You have a new trip request. Tap to view details.',
             ],
             'data' => [
+                'type' => "trip_request",
                 'trip_id' => (string) $trip->id,
-                'pickup_location' => $trip->from_address,
-                'destination' => $trip->to_address,
+                'from_address' => $trip->from_address,
+                'to_address' => $trip->to_address,
                 'scheduled_time' => $trip->scheduled_time->toDateTimeString(),
                 'trip_type' => (string) $trip->trip_type,
                 'total_amount' => (string) $trip->total_amount,

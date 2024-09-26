@@ -63,6 +63,12 @@
 php artisan storage:link
  php artisan db:seed
 
+ php artisan queue:table
+php artisan migrate
+
+php artisan queue:work
+
+
 
  4D7Y4GAEXDE1PBN9J1F7789F
 
@@ -176,8 +182,8 @@ Cảng Hàng Không Quốc Tế Nội Bài Ga Hàng Hóa Xã Phú Minh, Huyện 
 {
     "customer_id": 1,
     "from_address": "123 Main Street",
-    "from_lat": 10.762622,
-    "from_lng": 106.660172,
+    "from_lat": 10.7878806,
+    "from_lng": 106.6374324,
     "to_address": "456 Elm Street",
     "to_lat": 10.780000,
     "to_lng": 106.700000,

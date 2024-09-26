@@ -25,13 +25,17 @@ class NotificationController extends Controller
     {
         $serviceAccountPath = base_path(env('FIREBASE_CREDENTIALS'));
 
+        if (!file_exists($serviceAccountPath)) {
+            throw new \Exception("Firebase service account file not found at: {$serviceAccountPath}");
+        }
+
         $client = new Client();
         $client->setAuthConfig($serviceAccountPath);
         $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
 
         $accessToken = $client->fetchAccessTokenWithAssertion()['access_token'];
 
-        $projectId = 'push-notification-259d6'; 
+        $projectId = 'push-notification-259d6';
         $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
 
         $fields = [

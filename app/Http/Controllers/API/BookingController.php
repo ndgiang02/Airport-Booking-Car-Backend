@@ -161,7 +161,7 @@ class BookingController extends Controller
             }
         }
 
-        FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(5));
+        FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(2));
 
         return response()->json([
             'status' => true,
