@@ -16,7 +16,9 @@ class Driver extends Model
         'available',
         'latitude',
         'longitude',
-        'income'
+        'income',
+        'wallet_balance',
+        'device_token'
     ];
 
     public function user()
@@ -27,5 +29,10 @@ class Driver extends Model
     public function vehicle()
     {
         return $this->hasOne(Vehicle::class, 'driver_id', 'id');
+    }
+
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class, 'driver_id');
     }
 }

@@ -10,10 +10,12 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Fouladgar\OTP\Contracts\OTPNotifiable;
+use Fouladgar\OTP\Concerns\HasOTPNotify;
 
-class User extends Authenticatable
+class User extends Authenticatable implements OTPNotifiable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes, HasOTPNotify; 
 
     /**
      * The attributes that are mass assignable.
@@ -58,7 +60,5 @@ class User extends Authenticatable
     {
         return $this->hasOne(Driver::class);
     }
-
-
 
 }

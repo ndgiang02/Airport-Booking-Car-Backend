@@ -31,6 +31,7 @@
     "longitude": 106.70098
 }
 
+Hai phong: 20.864596, 106.68344000000002
 
 
 
@@ -202,3 +203,26 @@ Cảng Hàng Không Quốc Tế Nội Bài Ga Hàng Hóa Xã Phú Minh, Huyện 
         }
     ]
 }
+
+  Future<void> saveUserData(UserModel userModel, DriverModel driverModel, Vehicle? vehicleModel) async {
+    prefs.setInt('user_id', userModel.data!.user!.id!);
+    prefs.setString('user_name', userModel.data!.user!.name!);
+    prefs.setString('user_email', userModel.data!.user!.email!);
+    prefs.setString('user_mobile', userModel.data!.user!.mobile!);
+    prefs.setString('user_type', userModel.data!.user!.userType!);
+    prefs.setString('user_status', userModel.data!.user!.status!);
+
+    prefs.setInt('driver_id', driverModel.data!.id!);
+    prefs.setString('license_no', driverModel.data!.licenseNo!);
+    prefs.setDouble('rating', driverModel.data!.rating!);
+    prefs.setInt('available', driverModel.data!.available! as int);
+
+    if (vehicleModel != null) {
+      prefs.setInt('vehicle_type_id', vehicleModel.vehicleTypeId!);
+      prefs.setString('vehicle_brand', vehicleModel.brand!);
+      prefs.setString('vehicle_model', vehicleModel.model!);
+      prefs.setString('vehicle_license_plate', vehicleModel.licensePlate!);
+      prefs.setString('vehicle_color', vehicleModel.color!);
+    }
+    prefs.setString('auth_token', userModel.data!.token!);
+  }

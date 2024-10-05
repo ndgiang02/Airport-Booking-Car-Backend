@@ -22,7 +22,6 @@ return new class extends Migration {
             $table->string('to_address', 255); 
             $table->decimal('to_lat', 10, 5)->nullable();  
             $table->decimal('to_lng', 10, 5)->nullable();
-
             $table->datetime('scheduled_time')->nullable();
             $table->timestamp('from_time')->nullable();
             $table->timestamp('to_time')->nullable();
@@ -31,7 +30,8 @@ return new class extends Migration {
             $table->integer('km');       
             $table->decimal('total_amount', 10, 2)->nullable();
             $table->string('payment');
-            $table->enum('trip_status', ['requested', 'accepted', 'completed', 'cancelled']);
+            $table->string('vehicle_type')->nullable();
+            $table->enum('trip_status', ['requested', 'accepted','in_progress', 'completed', 'cancelled']);
             $table->enum('trip_type', ['airport', 'long_distance'])->default('airport');
             $table->timestamps();
             $table->softDeletes();

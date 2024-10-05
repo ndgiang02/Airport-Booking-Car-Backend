@@ -4,6 +4,11 @@ use App\Http\Controllers\API\BookingController;
 use App\Http\Controllers\API\DriverController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\VehiclesController;
+use App\Http\Controllers\API\WalletController;
+use App\Http\Controllers\TermsController;
+use App\Http\Controllers\IntroController;
+
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
@@ -26,28 +31,37 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('register', [UserController::class, 'register']);
-Route::post('register-driver', [DriverController::class, 'registerDriver']);
+Route::post('register-driver', [DriverController::class, 'registerDriver1']);
 
 Route::post('login', [UserController::class, 'login']);
-
-Route::post('send-otp', [OtpController::class, 'sendOtp']);
-
-Route::post('reset-password-otp', [ResetPasswordController::class, 'resetPasswordWithOtp']);
+Route::post('send-otp', [OtpController::class, 'sendOtp1']);
+Route::post('reset-password-otp', [UserController::class, 'resetPasswordWithOtp']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
-    Route::post('update-driver-location', [DriverController::class, 'updateDriverLocation']);
-    Route::post('trip-booking', [BookingController::class, 'tripBooking']);
+  
     Route::get('user-list', [UserController::class, 'userList']);
     Route::get('user-detail', [UserController::class, 'userDetail']);
     Route::post('update-profile', [UserController::class, 'updateProfile']);
     Route::post('change-password', [UserController::class, 'changePassword']);
     Route::post('update-user-status', [UserController::class, 'updateUserStatus']);
     Route::delete('delete-user-account', [UserController::class, 'deleteUserAccount']);
+
     Route::get('fetch-trips', [BookingController::class, 'getTrips']);
+    Route::post('trip-booking', [BookingController::class, 'tripBooking']);
+
+    Route::get('terms', [TermsController::class, 'getTerm']);
+    Route::get('intro', [IntroController::class, 'getIntrodution']);
+
 
 
     Route::post('driver/update-status', [DriverController::class, 'updateStatus']);
     Route::post('driver/update-location', [DriverController::class, 'updateLocation']);
+    Route::post('driver/accept-trip', [DriverController::class, 'acceptTrip']);
+    Route::post('driver/start-trip', [DriverController::class, 'startTrip']);
+    Route::post('driver/complete-trip', [DriverController::class, 'completeTrip']);
+    Route::get('driver/my-wallet', [WalletController::class, 'getWalletDriver']);
+
+    Route::get('vehicle/get-vehicle', [VehiclesController::class, 'getVehicleInfo']);
 
     //Route::get('vehicle-types', [VehiclesController::class, 'getVehicleTypes']);
     //Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);

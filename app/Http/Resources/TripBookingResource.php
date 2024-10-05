@@ -27,11 +27,6 @@ class TripBookingResource extends JsonResource
             'status' => $this->status,
             'is_round_trip' => $this->is_round_trip,
             'stops' => TripStopResource::collection($this->stops),
-            'driver' => $this->driver ? [
-                'id' => $this->driver->id,
-                'name' => $this->driver->name,
-                'vehicle' => $this->driver->vehicle ? $this->driver->vehicle->toArray() : null, 
-            ] : null,
         ];
     }
 }

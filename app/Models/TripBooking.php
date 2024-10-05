@@ -26,6 +26,7 @@ class TripBooking extends Model
         'km', 
         'total_amount', 
         'payment',
+        'vehicle_type',
         'trip_status',
         'trip_type',
     ];

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Otp;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -12,6 +13,8 @@ use App\Http\Resources\UserResource;
 use App\Http\Resources\DriverResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\API\NotificationController;
 use Carbon\Carbon;
 
 class UserController extends Controller
@@ -151,16 +154,23 @@ class UserController extends Controller
             if ($user->user_type === 'driver') {
                 $user->driver->token = $user->token;
                 $response = [
-                    'user' => new UserResource($user), 
+                    'user' => new UserResource($user),
                     'driver' => new DriverResource($user->driver->load('vehicle')),
                     'token' => $token
                 ];
             } else {
                 $response = [
-                    'user' => new UserResource($user), 
+                    'user' => new UserResource($user),
                     'token' => $token
                 ];
             }
+
+            if ($user->is_first_login && $user->user_type === 'customer') {
+                $this->sendWelcomeNotification($user->customer->device_token);
+                $user->is_first_login = false;
+                $user->save();
+            }
+
             return response()->json([
                 'message' => __('login.succesful'),
                 'status' => true,
@@ -347,7 +357,19 @@ class UserController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || $user->otp != $request->otp || Carbon::now()->gt($user->otp_expires_at)) {
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found.',
+                'status' => false
+            ], 404);
+        }
+
+        $otpRecord = Otp::where('user_id', $user->id)
+            ->where('otp', $request->otp)
+            ->where('expires_at', '>', Carbon::now())
+            ->first();
+
+        if (!$otpRecord) {
             return response()->json([
                 'message' => 'Invalid or expired OTP.',
                 'status' => false
@@ -355,8 +377,7 @@ class UserController extends Controller
         }
 
         $user->password = Hash::make($request->new_password);
-        $user->otp = null;
-        $user->otp_expires_at = null;
+        $otpRecord->delete();
         $user->save();
 
         return response()->json([
@@ -372,5 +393,27 @@ class UserController extends Controller
         $user->save();
         return response()->json(['status' => 'success', 'message' => 'Device token updated successfully!']);
     }
+
+    protected function sendWelcomeNotification($fcmToken)
+    {
+        $notificationData = [
+            'notification' => [
+                'title' => 'Xin chào!',
+                'body' => 'Cảm ơn bạn đã tham gia dịch vụ của chúng tôi!',
+            ],
+            'data' => [
+                'type' => 'welcome',
+                'message' => 'Chào mừng bạn đến với dịch vụ của chúng tôi!',
+            ],
+        ];
+
+        if ($fcmToken) {
+            $notificationController = new NotificationController();
+            $notificationController->sendNotification($fcmToken, $notificationData);
+        } else {
+            Log::error("Error sending welcome notification. FCM Token not found.");
+        }
+    }
+
 
 }

@@ -19,8 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('user_type');
             $table->string('status')->default('active');
-            $table->string('otp')->nullable();
-            $table->timestamp('otp_expires_at')->nullable();
+            $table->boolean('is_first_login')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });

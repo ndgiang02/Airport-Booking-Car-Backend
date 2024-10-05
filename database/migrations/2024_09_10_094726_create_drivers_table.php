@@ -20,7 +20,8 @@ return new class extends Migration
             $table->boolean('available')->default(false);
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
-            $table->decimal('wallet_balance', 10, 2)->default(0);
+            $table->decimal('income', 10, 2)->default(0.00);
+            $table->decimal('wallet_balance', 10, 2)->default(0.00);
             $table->string('device_token')->nullable();
             $table->timestamps();
             $table->softDeletes();

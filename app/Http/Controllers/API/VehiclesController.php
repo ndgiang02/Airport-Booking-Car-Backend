@@ -3,69 +3,42 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\VehicleType;
+use App\Models\Driver;
 use App\Models\Vehicle;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use App\Models\VehicleType;
+use App\Http\Resources\VehicleResource;
 
 class VehiclesController extends Controller
 {
-    protected $limit;
-
-    public function __construct()
+    public function getVehicleInfo()
     {
-        $this->limit = 20;
-    }
+        $user = auth()->user();
 
-    /**
-     * Lấy danh sách các phương tiện, phân trang.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function index()
-    {
-        $vehicles = Vehicle::paginate($this->limit);
-        return response()->json($vehicles);
-    }
+        $driver = Driver::where('user_id', $user->id)->first();
 
-    /**
-     * Lưu phương tiện mới vào cơ sở dữ liệu.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function registerVehicle(Request $request)
-    {
-        $request->validate([
-            'vehicle_type_id' => 'required|exists:vehicle_types,id',
-            'brand' => 'required|string',
-            'color' => 'required|string',
-            'license_plate' => 'required|string|unique:vehicles',
-        ]);
+        if (!$driver) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Driver not found',
+            ], 404);
+        }
 
-        $vehicle = Vehicle::create([
-            'driver_id' => auth()->id(),
-            'vehicle_type_id' => $request->input('vehicle_type_id'),
-            'brand' => $request->input('brand'),
-            'color' => $request->input('color'),
-            'seating_capacity' => $request->input('seating_capacity'),
-            'license_plate' => $request->input('license_plate'),
-        ]);
+        $vehicle = Vehicle::with('vehicleType')->where('driver_id', $driver->id)->first();
+
+        if (!$vehicle) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No vehicle information found for this driver',
+            ], 404);
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Vehicle register successful.',
-            'data' => $vehicle
-        ]);
+            'status' => true,
+            'message' => 'Vehicle information retrieved successfully',
+            'data' => new VehicleResource($vehicle),
+        ], 200);
     }
 
-    /**
-     * Lay cau hinh phuong tien
-     * 
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function getVehicleTypes()
     {
     
@@ -81,45 +54,6 @@ class VehiclesController extends Controller
             'status' => true,
             'data' => $vehicleTypes
         ], 200);
-    }
-
-    /**
-     * Lấy thông tin chi tiết của phương tiện.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function show($id)
-    {
-        $vehicle = Vehicle::find($id);
-
-        if (!$vehicle) {
-            return response()->json(['error' => 'Vehicle not found'], 404);
-        }
-
-        return response()->json($vehicle);
-    }
-
-
-    /**
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function destroy($id)
-    {
-        $vehicle = Vehicle::find($id);
-
-        if (!$vehicle) {
-            return response()->json(['error' => 'Vehicle not found'], 404);
-        }
-
-        $vehicle->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Vehicle deleted successfully'
-        ]);
     }
 
 }
