@@ -11,6 +11,9 @@ services:
       - WEB_DOCUMENT_ROOT=/var/www/public
     depends_on:
       - db
+      - python-api
+    networks:
+      - app-network
 
   db:
     image: 'mysql:8.0'
@@ -24,6 +27,9 @@ services:
       MYSQL_PASSWORD: admin
     ports:
       - '3306:3306'
+    networks:
+      - app-network
+
 
   phpmyadmin:
     image: 'phpmyadmin/phpmyadmin'
@@ -35,6 +41,26 @@ services:
       - '8080:80'
     depends_on:
       - db
+    networks:
+      - app-network
+
+  python-api:
+    build:
+      context: ./python-api
+      dockerfile: Dockerfile 
+    container_name: python-api
+    volumes:
+    - ./python-api:/usr/src/app
+    ports:
+      - '5000:5000'
+    networks:
+      - app-network      
+    depends_on:
+      - db              
 
 volumes:
   dbdata:
+
+networks:
+  app-network:   # Định nghĩa mạng app-network
+    driver: bridge

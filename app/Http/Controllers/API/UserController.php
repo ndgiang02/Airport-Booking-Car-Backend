@@ -9,6 +9,7 @@ use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Driver;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\DriverResource;
 use Illuminate\Support\Facades\Auth;
@@ -22,110 +23,39 @@ class UserController extends Controller
 
     public function registerCustomer(Request $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8',
-            'mobile' => 'nullable|string|max:20|unique:users,mobile',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:8',
+                'mobile' => 'required|string|max:20|unique:users,mobile',
+                'user_type' => 'required|in:customer',
+            ]);
 
-        $validatedData['password'] = Hash::make($validatedData['password']);
-        $validatedData['status'] = 'active';
+            $validatedData['password'] = Hash::make($validatedData['password']);
+            $validatedData['status'] = 'active';
 
-        $user = User::create($validatedData);
-
-        $customer = Customer::create([
-            'user_id' => $user->id,
-            'rating' => 5.0,
-        ]);
-
-        $user->token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Customer registered successfully',
-            'data' => [
-                'user' => new UserResource($user),
-                'customer' => $customer
-            ],
-            'status' => true
-        ], 201);
-    }
-
-    public function register(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8',
-            'mobile' => 'nullable|string|max:20|unique:users,mobile',
-            'user_type' => 'required|in:customer,driver',
-            'license_no' => 'required_if:user_type,driver|string|max:255',
-            'vehicle_type_id' => 'required_if:user_type,driver|string|max:255',
-            'license_plate' => 'required_if:user_type,driver|string|max:255|unique:vehicles,license_plate',
-            'brand' => 'required_if:user_type,driver|string|max:50',
-            'color' => 'required_if:user_type,driver|string|max:30',
-        ]);
-
-        $validatedData['password'] = Hash::make($validatedData['password']);
-
-        $validatedData['status'] = $validatedData['user_type'] === 'customer' ? 'active' : 'pending';
-
-        $user = User::create($validatedData);
-
-        if ($validatedData['user_type'] === 'customer') {
+            $user = User::create($validatedData);
 
             $customer = Customer::create([
                 'user_id' => $user->id,
                 'rating' => 5.0,
             ]);
 
-            $data = [
-                'user' => new UserResource($user),
-                'customer' => $customer
-            ];
-
-        } elseif ($validatedData['user_type'] === 'driver') {
-            $driver = Driver::create([
-                'user_id' => $user->id,
-                'license_no' => $validatedData['license_no'],
-                'rating' => 5.0,
-                'available' => false,
-            ]);
-
-            $vehicleType = $validatedData['vehicle_type'];
-            $vehicleConfig = config("vehicle.types.$vehicleType");
-
-            if (!$vehicleConfig) {
-                return response()->json(['error' => 'Invalid vehicle type'], 400);
-            }
-
-            $startingPrice = $vehicleConfig['starting_price'];
-            $ratePerKm = $vehicleConfig['rate_per_km'];
-
-            $vehicle = Vehicle::create([
-                'driver_id' => $driver->id,
-                'vehicle_type' => $vehicleType,
-                'initial_starting_price' => $startingPrice,
-                'rate_per_km' => $ratePerKm,
-                'license_plate' => $validatedData['license_plate'],
-                'seating_capacity' => $validatedData['seating_capacity'],
-                'brand' => $validatedData['brand'],
-                'color' => $validatedData['color'],
-            ]);
-
-            $data = [
-                'user' => new UserResource($user),
-                'driver' => new DriverResource($driver->load('vehicle'))
-            ];
+            return response()->json([
+                'message' => 'Customer registered successfully',
+                'data' => [
+                    'user' => new UserResource($user),
+                    'customer' => $customer
+                ],
+                'status' => true
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $user->token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'User registered successfully',
-            'data' => $data,
-            'status' => true
-        ], 201);
     }
 
     public function login(Request $request)
@@ -183,38 +113,6 @@ class UserController extends Controller
         ], 401);
     }
 
-    public function userList(Request $request)
-    {
-        $user_type = $request->get('user_type', 'customer');
-
-        $user_list = User::where('user_type', $user_type);
-
-        if ($request->has('is_online')) {
-            $user_list->where('is_online', $request->get('is_online'));
-        }
-
-        if ($request->has('status')) {
-            $user_list->where('status', $request->get('status'));
-        }
-
-        $users = $user_list->paginate(config('constant.PER_PAGE_LIMIT', 15));
-
-        return UserResource::collection($users);
-    }
-
-    public function userDetail(Request $request)
-    {
-        $id = $request->id;
-
-        $user = User::findOrFail($id);
-
-        if ($user->user_type == 'driver') {
-            return new DriverResource($user);
-        }
-
-        return new UserResource($user);
-    }
-
     public function changePassword(Request $request)
     {
         $request->validate([
@@ -256,7 +154,7 @@ class UserController extends Controller
         }
 
         if ($user->user_type == 'customer') {
-            $user->fill($request->only(['name', 'phone_number']))->update();
+            $user->fill($request->only(['name', 'mobile']))->update();
         }
 
         if ($user->user_type == 'driver') {
@@ -412,6 +310,102 @@ class UserController extends Controller
             $notificationController->sendNotification($fcmToken, $notificationData);
         } else {
             Log::error("Error sending welcome notification. FCM Token not found.");
+        }
+    }
+
+    public function checkPhoneNumber(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mobile' => 'required|string|max:15',
+            'user_type' => 'required|in:customer,driver',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $phoneNumber = $request->input('mobile');
+        $userType = $request->input('user_type');
+
+        $user = User::where('mobile', $phoneNumber)
+            ->where('user_type', $userType)
+            ->first();
+
+        if ($user) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Phone number is already registered.',
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Phone number is not registered.',
+            ], 200);
+        }
+    }
+
+
+    public function getUserByPhoneNumber(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mobile' => 'required|string|max:15',
+            'user_type' => 'required|in:customer,driver',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+
+        $phoneNumber = $request->input('mobile');
+        $userType = $request->input('user_type');
+
+        $user = User::where('mobile', $phoneNumber)
+            ->where('user_type', $userType)
+            ->first();
+
+        if ($request->has('device_token')) {
+            if ($user->user_type === 'driver') {
+                $user->driver->device_token = $request->device_token;
+                $user->driver->save();
+            } elseif ($user->user_type === 'customer') {
+                $user->customer->device_token = $request->device_token;
+                $user->customer->save();
+            }
+        }
+
+        if ($user) {
+            $token = $user->createToken('authToken')->plainTextToken;
+
+            if ($user->user_type === 'driver') {
+                $response = [
+                    'user' => new UserResource($user),
+                    'driver' => new DriverResource($user->driver->load('vehicle')),
+                    'token' => $token
+                ];
+            } else {
+                $response = [
+                    'user' => new UserResource($user),
+                    'token' => $token
+                ];
+            }
+
+            if ($user->is_first_login && $user->user_type === 'customer') {
+                $this->sendWelcomeNotification($user->customer->device_token);
+                $user->is_first_login = false;
+                $user->save();
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'User found.',
+                'data' => $response,
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found.',
+            ], 404);
         }
     }
 

@@ -5,10 +5,12 @@ namespace App\Http\Controllers\API;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\TripBooking;
+use Illuminate\Support\Facades\Log;
 use App\Models\Driver;
 use App\Http\Resources\TripBookingResource;
-use App\Http\Resources\DriverResource;
+use Illuminate\Support\Facades\Auth;
 use App\Jobs\FindNearestDriverJob;
+use App\Jobs\RunClusteringJob;
 use Carbon\Carbon;
 use Validator;
 
@@ -17,6 +19,9 @@ class BookingController extends Controller
 
     public function tripBooking(Request $request)
     {
+
+        Log::info($request->all());
+
         $validator = Validator::make($request->all(), [
             'customer_id' => 'required|exists:customers,id',
             'from_address' => 'required|string|max:255',
@@ -27,11 +32,13 @@ class BookingController extends Controller
             'to_lng' => 'required|numeric',
             'scheduled_time' => 'required|date',
             'km' => 'required|numeric',
+            'passenger_count' => 'required|integer',
             'total_amount' => 'required|numeric',
             'payment' => 'required|string',
             'round_trip' => 'boolean',
             'return_time' => 'nullable|date|after:scheduled_time',
-            'vehicle_type' => "required|string",
+            'trip_type' => 'required|string',
+            'vehicle_type' => "required|integer",
             'stops' => 'nullable|array',
             'stops.*.stop_address' => 'nullable|string|max:255',
             'stops.*.stop_lat' => 'nullable|numeric',
@@ -59,11 +66,16 @@ class BookingController extends Controller
             'return_time' => $request->return_time ? Carbon::parse($request->return_time) : null,
             'vehicle_type' => $request->vehicle_type,
             'km' => $request->km,
+            'passenger_count' => $request->passenger_count,
             'total_amount' => $request->total_amount,
             'payment' => $request->payment,
+            'trip_type' => $request->trip_type,
             'trip_status' => 'requested',
             'round_trip' => $request->round_trip,
         ]);
+
+
+        Log::info($tripBooking);
 
         if ($request->has('stops')) {
             foreach ($request->stops as $stop) {
@@ -76,8 +88,6 @@ class BookingController extends Controller
                 ]);
             }
         }
-
-
 
         FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(1));
 
@@ -113,7 +123,7 @@ class BookingController extends Controller
         if ($status === 'upcoming') {
             $query->whereIn('trip_status', ['requested', 'accepted']);
         } else {
-            $query->whereIn('trip_status', ['completed', 'cancelled']);
+            $query->withTrashed()->whereIn('trip_status', ['completed', 'cancelled']);
         }
 
         $trips = $query->orderBy('scheduled_time', 'desc')->get();
@@ -132,30 +142,102 @@ class BookingController extends Controller
     }
 
 
-    public function cancelBooking(Request $request, $id)
+    public function cancelTrip(Request $request)
     {
-        $tripBooking = TripBooking::find($id);
+
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|exists:trip_bookings,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $tripBooking = TripBooking::find($request->id);
 
         if (!$tripBooking) {
             return response()->json(['message' => 'Trip not found'], 404);
         }
 
-        $currentUser = $request->user();
+        $currentUser = Auth::user();
+        $customer = $currentUser->customer;
 
-        if ($tripBooking->user_id !== $currentUser->id) {
+        if ($tripBooking->customer_id !== $customer->id) {
             return response()->json(['message' => 'You can only cancel your own trips'], 403);
         }
 
-        if ($tripBooking->status !== 'requested') {
+        if ($tripBooking->trip_status !== 'requested') {
             return response()->json(['message' => 'Only requested trips can be canceled'], 400);
         }
 
         $tripBooking->update(['trip_status' => 'canceled']);
+        $tripBooking->delete();
 
         return response()->json([
+            'status' => true,
             'message' => 'Trip canceled successfully',
             'data' => new TripBookingResource($tripBooking)
         ], 200);
+    }
+
+    public function TripCluster(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'customer_id' => 'required|exists:customers,id',
+            'from_address' => 'required|string|max:255',
+            'from_lat' => 'required|numeric',
+            'from_lng' => 'required|numeric',
+            'to_address' => 'required|string|max:255',
+            'to_lat' => 'required|numeric',
+            'to_lng' => 'required|numeric',
+            'scheduled_time' => 'required|date',
+            'km' => 'required|numeric',
+            'vehicle_type' => "required|integer",
+            'passenger_count' => 'required|integer',
+            'trip_type' => 'required|string',
+            'total_amount' => 'required|numeric',
+            'payment' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $tripBooking = TripBooking::create([
+            'driver_id' => null,
+            'customer_id' => $request->customer_id,
+            'from_address' => $request->from_address,
+            'from_lat' => $request->from_lat,
+            'from_lng' => $request->from_lng,
+            'to_address' => $request->to_address,
+            'to_lat' => $request->to_lat,
+            'to_lng' => $request->to_lng,
+            'scheduled_time' => Carbon::parse($request->scheduled_time),
+            'from_time' => null,
+            'to_time' => null,
+            'return_time' => null,
+            'km' => $request->km,
+            'vehicle_type' => $request->vehicle_type,
+            'passenger_count' => $request->passenger_count,
+            'total_amount' => $request->total_amount,
+            'payment' => $request->payment,
+            'trip_status' => 'requested',
+            'trip_type' => $request->trip_type,
+            'round_trip' => false,
+        ]);
+
+
+        $pendingRequests = TripBooking::where('trip_status', 'requested')->whereIn('trip_type', ['airport_sharing'])->count();
+
+        if ($pendingRequests >= 2) {
+            RunClusteringJob::dispatch();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Trip booking created successfully without a driver.',
+            'data' => $tripBooking,
+        ], 201);
     }
 
 

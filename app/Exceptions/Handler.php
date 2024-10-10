@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -26,5 +27,22 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
+
+
+
+
+    public function render($request, Throwable $exception)
+    {
+        Log::error($exception->getMessage());
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'errors' => method_exists($exception, 'errors') ? $exception->errors() : null
+            ], $this->isHttpException($exception) ? $exception->getStatusCode() : 400);
+        }
+
+        return parent::render($request, $exception);
     }
 }

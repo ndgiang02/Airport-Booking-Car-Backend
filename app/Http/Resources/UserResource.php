@@ -21,7 +21,6 @@ class UserResource extends JsonResource
             'mobile' => $this->mobile,
             'user_type' => $this->user_type,
             'status'=> $this->status,
-            'token' => $this->token,
         ];
     }
 }

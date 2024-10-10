@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cdf3c9d5dfb8cb98c4ce9436d04681f0",
+    "content-hash": "b8c83ba88f6f0666cd1b06556fee7147",
     "packages": [
         {
             "name": "beste/clock",
@@ -5783,16 +5783,16 @@
         },
         {
             "name": "symfony/dom-crawler",
-            "version": "v5.4.40",
+            "version": "v5.4.44",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/dom-crawler.git",
-                "reference": "2ad469c3e07fdba677b278d0e266071a51aa0dac"
+                "reference": "4c76e4176a5472c5afe504194d7bbef5cfdd1703"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/dom-crawler/zipball/2ad469c3e07fdba677b278d0e266071a51aa0dac",
-                "reference": "2ad469c3e07fdba677b278d0e266071a51aa0dac",
+                "url": "https://api.github.com/repos/symfony/dom-crawler/zipball/4c76e4176a5472c5afe504194d7bbef5cfdd1703",
+                "reference": "4c76e4176a5472c5afe504194d7bbef5cfdd1703",
                 "shasum": ""
             },
             "require": {
@@ -5838,7 +5838,7 @@
             "description": "Eases DOM navigation for HTML and XML documents",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/dom-crawler/tree/v5.4.40"
+                "source": "https://github.com/symfony/dom-crawler/tree/v5.4.44"
             },
             "funding": [
                 {
@@ -5854,7 +5854,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-05-31T14:33:22+00:00"
+            "time": "2024-09-11T06:50:28+00:00"
         },
         {
             "name": "symfony/error-handler",
@@ -7917,59 +7917,6 @@
                 "source": "https://github.com/tijsverkoyen/CssToInlineStyles/tree/v2.2.7"
             },
             "time": "2023-12-08T13:03:43+00:00"
-        },
-        {
-            "name": "twilio/sdk",
-            "version": "8.3.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/twilio/twilio-php.git",
-                "reference": "bfbb3bd7f274ccd3948f5c98f108c64a2db470d7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/twilio/twilio-php/zipball/bfbb3bd7f274ccd3948f5c98f108c64a2db470d7",
-                "reference": "bfbb3bd7f274ccd3948f5c98f108c64a2db470d7",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=7.1.0"
-            },
-            "require-dev": {
-                "guzzlehttp/guzzle": "^6.3 || ^7.0",
-                "phpunit/phpunit": ">=7.0 < 10"
-            },
-            "suggest": {
-                "guzzlehttp/guzzle": "An HTTP client to execute the API requests"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Twilio\\": "src/Twilio/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Twilio API Team",
-                    "email": "api@twilio.com"
-                }
-            ],
-            "description": "A PHP wrapper for Twilio's API",
-            "homepage": "https://github.com/twilio/twilio-php",
-            "keywords": [
-                "api",
-                "sms",
-                "twilio"
-            ],
-            "support": {
-                "issues": "https://github.com/twilio/twilio-php/issues",
-                "source": "https://github.com/twilio/twilio-php/tree/8.3.1"
-            },
-            "time": "2024-09-18T13:24:34+00:00"
         },
         {
             "name": "vlucas/phpdotenv",

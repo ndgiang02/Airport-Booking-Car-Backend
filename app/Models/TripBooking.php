@@ -24,6 +24,7 @@ class TripBooking extends Model
         'return_time',
         'round_trip',
         'km', 
+        'passenger_count',
         'total_amount', 
         'payment',
         'vehicle_type',
@@ -54,5 +55,10 @@ class TripBooking extends Model
     public function stops()
     {
         return $this->hasMany(TripStop::class, 'trip_booking_id');
+    }
+
+    public function vehicleType()
+    {
+        return $this->belongsTo(VehicleType::class, 'vehicle_type', 'id');
     }
 }

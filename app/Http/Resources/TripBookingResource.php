@@ -22,9 +22,10 @@ class TripBookingResource extends JsonResource
             'to_date_time' => $this->to_date_time,
             'return_date_time' => $this->return_date_time,
             'km' => $this->km,
+            'passenger_count' => $this->passenger_count,
             'total_amount' => $this->total_amount,
             'payment' => $this->payment,
-            'status' => $this->status,
+            'status' => $this->trip_status,
             'is_round_trip' => $this->is_round_trip,
             'stops' => TripStopResource::collection($this->stops),
         ];

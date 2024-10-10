@@ -5,6 +5,7 @@ use App\Http\Controllers\API\DriverController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\VehiclesController;
 use App\Http\Controllers\API\WalletController;
+use App\Http\Controllers\ClusterController;
 use App\Http\Controllers\TermsController;
 use App\Http\Controllers\IntroController;
 
@@ -30,8 +31,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('register', [UserController::class, 'register']);
+Route::post('register', [UserController::class,'registerCustomer']);
+
 Route::post('register-driver', [DriverController::class, 'registerDriver1']);
+
+Route::post('check-phone', [UserController::class, 'checkPhoneNumber']);
+Route::post('get-user-by-phone', [UserController::class, 'getUserByPhoneNumber']);
 
 Route::post('login', [UserController::class, 'login']);
 Route::post('send-otp', [OtpController::class, 'sendOtp1']);
@@ -48,11 +53,10 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::get('fetch-trips', [BookingController::class, 'getTrips']);
     Route::post('trip-booking', [BookingController::class, 'tripBooking']);
+    Route::post('cancel-trip', [BookingController::class, 'cancelTrip']);
 
     Route::get('terms', [TermsController::class, 'getTerm']);
     Route::get('intro', [IntroController::class, 'getIntrodution']);
-
-
 
     Route::post('driver/update-status', [DriverController::class, 'updateStatus']);
     Route::post('driver/update-location', [DriverController::class, 'updateLocation']);
@@ -62,6 +66,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('driver/my-wallet', [WalletController::class, 'getWalletDriver']);
 
     Route::get('vehicle/get-vehicle', [VehiclesController::class, 'getVehicleInfo']);
+    Route::post('trip-cluster', [BookingController::class, 'TripCluster']);
+
 
     //Route::get('vehicle-types', [VehiclesController::class, 'getVehicleTypes']);
     //Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
@@ -70,3 +76,4 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
 
     Route::get('vehicle-types', [VehiclesController::class, 'getVehicleTypes']);
+

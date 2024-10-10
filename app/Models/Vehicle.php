@@ -24,9 +24,13 @@ class Vehicle extends Model
         'vehicle_type_id' => 'integer'
     ];
 
-    public function vehicleType()
+    public function driver()
     {
-        return $this->belongsTo(VehicleType::class);
+        return $this->belongsTo(Driver::class, 'driver_id', 'id');
     }
 
+    public function vehicleType()
+    {
+        return $this->belongsTo(VehicleType::class, 'vehicle_type_id', 'id');
+    }
 }

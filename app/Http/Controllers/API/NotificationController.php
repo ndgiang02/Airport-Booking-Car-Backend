@@ -35,7 +35,7 @@ class NotificationController extends Controller
 
         $accessToken = $client->fetchAccessTokenWithAssertion()['access_token'];
 
-        $projectId = 'push-notification-259d6';
+        $projectId = 'booking-app-backend-b0410';
         $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
 
         $fields = [

@@ -18,21 +18,23 @@ return new class extends Migration {
             $table->string('from_address', 255);  
             $table->decimal('from_lat', 10, 5)->nullable(); 
             $table->decimal('from_lng', 10, 5)->nullable();  
-        
             $table->string('to_address', 255); 
             $table->decimal('to_lat', 10, 5)->nullable();  
             $table->decimal('to_lng', 10, 5)->nullable();
+
             $table->datetime('scheduled_time')->nullable();
             $table->timestamp('from_time')->nullable();
             $table->timestamp('to_time')->nullable();
             $table->datetime('return_time')->nullable();
+
             $table->boolean('round_trip')->default(false);
-            $table->integer('km');       
+            $table->integer('km'); 
+            $table->integer('passenger_count')->default(1); 
             $table->decimal('total_amount', 10, 2)->nullable();
             $table->string('payment');
-            $table->string('vehicle_type')->nullable();
-            $table->enum('trip_status', ['requested', 'accepted','in_progress', 'completed', 'cancelled']);
-            $table->enum('trip_type', ['airport', 'long_distance'])->default('airport');
+            $table->enum('trip_status', ['requested', 'accepted','in_progress', 'completed', 'canceled']);
+            $table->string('trip_type')->nullable();
+            $table->integer('cluster_group')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
