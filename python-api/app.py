@@ -53,7 +53,7 @@ def cluster():
             for loc in data['trips']
         ])
          
-        # Tính toán WCSS và tìm số lượng cụm tối ưu dựa trên tọa độ
+        # Caculator WCSS and Find n_clusters
         wcss = calculate_wcss(coordinates_and_time, max_k=10)
         elbow_plot_url = plot_elbow_method(wcss)
         n_clusters = find_elbow(wcss)
@@ -66,7 +66,7 @@ def cluster():
         final_clusters = clusters.copy()
         vehicle_types_per_cluster = {}
 
-         # Cluster theo loại phương tiện
+         # Cluster vehicle type
         current_index = max(final_clusters) + 1
         for cluster_id in set(clusters):
             vehicle_types_in_cluster = set([
@@ -78,7 +78,6 @@ def cluster():
             if len(vehicle_types_in_cluster) > 1:
                 for i in range(len(data['trips'])):
                     if final_clusters[i] == cluster_id and data['trips'][i]['vehicle_type'] != list(vehicle_types_in_cluster)[0]:
-                        # Gán cụm mới và cập nhật vehicle_types_per_cluster
                         final_clusters[i] = current_index
                         vehicle_types_per_cluster[current_index] = [data['trips'][i]['vehicle_type']]
                 current_index += 1

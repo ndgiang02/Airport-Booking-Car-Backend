@@ -26,9 +26,9 @@ class Driver extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public function vehicles()
+    public function vehicle()
     {
-        return $this->hasOne(Vehicle::class, 'driver_id', 'id');
+        return $this->hasOne(Vehicle::class);
     }
 
     public function walletTransactions()

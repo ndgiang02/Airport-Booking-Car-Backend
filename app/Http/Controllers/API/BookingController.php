@@ -6,11 +6,11 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\TripBooking;
 use Illuminate\Support\Facades\Log;
-use App\Models\Driver;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\TripBookingResource;
 use Illuminate\Support\Facades\Auth;
 use App\Jobs\FindNearestDriverJob;
-use App\Jobs\RunClusteringJob;
+use App\Jobs\ClusteringJob;
 use Carbon\Carbon;
 use Validator;
 
@@ -226,12 +226,25 @@ class BookingController extends Controller
             'round_trip' => false,
         ]);
 
+    
+        $pendingRequests = Cache::get('pending_requests_count', 0);
+        Log::info('Current pending_requests_count from cache: ' . $pendingRequests);  
 
-        $pendingRequests = TripBooking::where('trip_status', 'requested')->whereIn('trip_type', ['airport_sharing'])->count();
+        $pendingRequests++;
+        Cache::put('pending_requests_count', $pendingRequests, 60);
+
+        Log::info('Updated pending_requests_count after increment: ' . $pendingRequests);
+
 
         if ($pendingRequests >= 2) {
-            RunClusteringJob::dispatch();
+            try {
+                ClusteringJob::dispatch();
+            } catch (\Exception $e) {
+                Log::error('Error dispatching ClusteringJob: ' . $e->getMessage());
+            }
+            Cache::put('pending_requests_count', 0, 300);
         }
+
 
         return response()->json([
             'status' => true,
@@ -239,6 +252,5 @@ class BookingController extends Controller
             'data' => $tripBooking,
         ], 201);
     }
-
 
 }

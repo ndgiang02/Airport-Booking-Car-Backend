@@ -13,13 +13,24 @@ use App\Http\Resources\DriverResource;
 use Illuminate\Support\Facades\Hash;
 use App\Models\TripBooking;
 use Illuminate\Http\Request;
-use App\Events\DriverLocationUpdated;
+use App\Services\CustomerService;
+use App\Jobs\AssignDriverToClusterJob;
+use App\Jobs\FindNearestDriverJob;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use DB;
 
 class DriverController extends Controller
 {
+
+	protected $customerService;
+
+	public function __construct(CustomerService $customerService)
+	{
+		$this->customerService = $customerService;
+	}
+
+
 	public function registerDriver1(Request $request)
 	{
 		try {
@@ -115,8 +126,6 @@ class DriverController extends Controller
 		if ($driver) {
 			$driver->available = $request->available;
 			$driver->save();
-
-			broadcast(new DriverLocationUpdated($driver->id, $driver->latitude, $driver->longitude));
 
 			return response()->json([
 				'status' => true,
@@ -365,6 +374,319 @@ class DriverController extends Controller
 			'monthly_income' => $monthlyIncome
 		], 200);
 	}
+
+	public function acceptCluster(Request $request)
+	{
+
+		$user = auth()->user();
+		$driver = Driver::where('user_id', $user->id)->first();
+
+		$clusterId = $request->input('cluster_id');
+
+		Log::info('cluster Group:' . $clusterId);
+
+		$tripsInCluster = TripBooking::where('cluster_group', $clusterId)->get();
+
+
+		if ($tripsInCluster->isEmpty()) {
+			return response()->json(['message' => 'No trips found in the cluster'], 404);
+		}
+
+		try {
+			$tripDetails = [];
+
+			foreach ($tripsInCluster as $trip) {
+				$trip->driver_id = $driver->id;
+				$trip->trip_status = 'accepted';
+				$trip->save();
+				$this->customerService->sendNotificationToCustomer($trip);
+				$tripDetails[] = [
+					'total_amount' => $trip->total_amount,
+					'from_address' => $trip->from_address,
+					'to_address' => $trip->to_address,
+					'from_lat' => $trip->from_lat,
+					'from_lng' => $trip->from_lng,
+					'to_lat' => $trip->to_lat,
+					'to_lng' => $trip->to_lng,
+					'scheduled_time' => $trip->scheduled_time->format('Y-m-d H:i'),
+					'customer' => $trip->customer->id,
+					'name' => $trip->customer->user->name,
+					'mobile' => $trip->customer->user->mobile,
+				];
+			}
+
+			$driver->available = false;
+			$driver->save();
+
+			return response()->json([
+				'message' => 'Cluster accepted by driver successfully.',
+				'status' => true,
+				'data' => $tripDetails,
+			], 200);
+
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error accepting trip: ' . $e->getMessage());
+			return response()->json(['error' => 'Could not accept trip'], 500);
+		}
+
+	}
+
+	public function startCluster(Request $request)
+	{
+		$user = auth()->user();
+		$driver = Driver::where('user_id', $user->id)->first();
+
+		if (!$driver || $user->user_type !== 'driver') {
+			return response()->json([
+				'message' => 'Only drivers can start trips'
+			], 403);
+		}
+
+		$clusterId = $request->input('cluster_id');
+
+		$trips = TripBooking::where('cluster_group', $clusterId)->get();
+
+		if ($trips->isEmpty()) {
+			return response()->json([
+				'message' => 'No trips found in the cluster'
+			], 404);
+		}
+
+		foreach ($trips as $trip) {
+			if ($trip->trip_status !== 'accepted') {
+				return response()->json([
+					'message' => 'All trips in the cluster must be accepted to start'
+				], 400);
+			}
+
+			if ($trip->driver_id !== $driver->id) {
+				return response()->json([
+					'message' => 'You are not assigned to all trips in this cluster'
+				], 403);
+			}
+		}
+
+		foreach ($trips as $trip) {
+			$trip->update([
+				'trip_status' => 'in_progress',
+				'from_time' => now()
+			]);
+		}
+
+		return response()->json([
+			'message' => 'All trips in the cluster started successfully',
+			'status' => true,
+			'data' => [
+				'cluster_id' => $clusterId,
+				'driver_id' => $driver->id,
+				'trip_status' => 'in_progress',
+				'from_time' => now()
+			]
+		], 200);
+
+
+	}
+	public function completeCluster(Request $request)
+	{
+		$user = auth()->user();
+		$driver = Driver::where('user_id', $user->id)->first();
+
+		if (!$driver || $user->user_type !== 'driver') {
+			return response()->json([
+				'message' => 'Only drivers can complete trips'
+			], 403);
+		}
+
+		$clusterId = $request->input('cluster_id');
+		$tripsInCluster = TripBooking::where('cluster_group', $clusterId)
+			->where('trip_status', 'in_progress')
+			->get();
+
+		if ($tripsInCluster->isEmpty()) {
+			return response()->json([
+				'message' => 'No in-progress trips found in the cluster'
+			], 404);
+		}
+
+		try {
+			DB::beginTransaction();
+
+			$totalAmount = 0;
+			$driverIncome = 0;
+			$platformFee = 0;
+
+			foreach ($tripsInCluster as $trip) {
+				$trip->update([
+					'trip_status' => 'completed',
+					'to_time' => now()
+				]);
+
+				$totalAmount += $trip->total_amount;
+				$paymentMethod = $trip->payment;
+				if ($paymentMethod === 'wallet') {
+					$currentDriverIncome = $trip->total_amount * 0.80;
+					$driverIncome += $currentDriverIncome;
+					WalletTransaction::create([
+						'driver_id' => $driver->id,
+						'amount' => $currentDriverIncome,
+						'type' => 'credit',
+						'description' => 'Trip income (wallet payment)'
+					]);
+				} elseif ($paymentMethod === 'cash') {
+					$currentPlatformFee = $trip->total_amount * 0.20;
+					$platformFee += $currentPlatformFee;
+					$driver->wallet_balance -= $currentPlatformFee;
+
+					WalletTransaction::create([
+						'driver_id' => $driver->id,
+						'amount' => $currentPlatformFee,
+						'type' => 'debit',
+						'description' => 'Platform fee (cash payment)'
+					]);
+				}
+			}
+
+
+			$driver->available = true;
+			$driver->income += $driverIncome;
+			$driver->save();
+
+			DB::commit();
+
+			return response()->json([
+				'status' => true,
+				'message' => 'Cluster trips completed successfully',
+				'data' => [
+					'cluster_id' => $clusterId,
+					'driver_id' => $driver->id,
+					'total_amount' => $totalAmount,
+					'driver_income' => $driverIncome,
+					'platform_fee' => $platformFee,
+					'new_wallet_balance' => $driver->wallet_balance,
+					'new_income' => $driver->income
+				]
+			], 200);
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error completing cluster: ' . $e->getMessage());
+			return response()->json(['error' => 'Could not complete cluster'], 500);
+		}
+	}
+
+	public function rejectClusterTrip(Request $request)
+	{
+		$user = auth()->user();
+		$driver = Driver::where('user_id', $user->id)->first();
+
+		$clusterId = $request->input('cluster_id');
+
+		Log::info('Cluster Group Rejection: ' . $clusterId);
+
+		$tripsInCluster = TripBooking::where('cluster_group', $clusterId)->get();
+
+		if ($tripsInCluster->isEmpty()) {
+			return response()->json(['message' => 'No trips found in the cluster'], 404);
+		}
+
+		try {
+			DB::beginTransaction();
+
+			foreach ($tripsInCluster as $trip) {
+				if ($trip->trip_status == 'accepted') {
+					return response()->json(['message' => 'Trip already accepted by another driver'], 400);
+				}
+			}
+
+			$driver->available = true;
+			$driver->save();
+
+			AssignDriverToClusterJob::dispatch($clusterId, $tripsInCluster->first()->vehicle_type);
+			DB::commit();
+
+			return response()->json([
+				'message' => 'Cluster rejected by driver, new driver assignment in progress.',
+				'status' => true,
+			], 200);
+
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error rejecting trip: ' . $e->getMessage());
+			return response()->json(['error' => 'Could not reject trip'], 500);
+		}
+	}
+
+	public function rejectTrip(Request $request)
+	{
+		$user = auth()->user();
+		$driver = Driver::where('user_id', $user->id)->first();
+		$tripId = $request->input('trip_id');
+
+		$trip = TripBooking::where('id', $tripId)->first();
+
+		if (!$trip) {
+			return response()->json(['message' => 'Trip not found'], 404);
+		}
+
+		if ($trip->trip_status == 'accepted') {
+			return response()->json(['message' => 'Trip already accepted by another driver'], 400);
+		}
+
+		try {
+			DB::beginTransaction();
+			$driver->available = true;
+			$driver->save();
+
+			FindNearestDriverJob::dispatch($trip)->delay(now()->addMinutes(1));
+
+			DB::commit();
+
+			return response()->json([
+				'message' => 'Trip rejected by driver, new driver assignment in progress.',
+				'status' => true,
+			], 200);
+
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error rejecting trip: ' . $e->getMessage());
+			return response()->json(['error' => 'Could not reject trip'], 500);
+		}
+	}
+
+	public function getTripsDriver(Request $request)
+	{
+		$user = auth()->user();
+		$driver = Driver::where('user_id', $user->id)->first();
+
+		if (!$driver) {
+			return response()->json([
+				'message' => 'Driver not found for this user',
+				'data' => []
+			], 404);
+		}
+
+		$driverId = $driver->id;
+
+		$trips = TripBooking::with(['driver', 'customer'])
+			->where('driver_id', $driverId)
+			->whereIn('trip_status', ['completed'])
+			->orderBy('to_time', 'desc')
+			->get();
+
+		if ($trips->isEmpty()) {
+			return response()->json([
+				'message' => 'No completed trips found for this driver',
+				'data' => []
+			], 404);
+		}
+
+		return response()->json([
+			'message' => 'Fetch completed trips successfully.',
+			'data' => $trips
+		], 200);
+	}
+
+
 
 
 }

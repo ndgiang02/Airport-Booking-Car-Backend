@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\WalletTransaction;
+use App\Models\Driver;
 use Illuminate\Http\Request;
 
 class WalletController extends Controller
@@ -12,6 +13,7 @@ class WalletController extends Controller
     {
 
         $user = auth()->user();
+        $driver = Driver::where('user_id', $user->id)->first();
 
         if ($user->user_type !== 'driver') {
             return response()->json([
@@ -20,10 +22,10 @@ class WalletController extends Controller
             ], 403);
         }
 
-        $driver_id = $user->id;
+        $driverId = $driver->id;
         
-        $balance = WalletTransaction::where('driver_id', $driver_id)->sum('amount');
-        $transactions = WalletTransaction::where('driver_id', $driver_id)->get();
+        $balance = WalletTransaction::where('driver_id', $driverId)->sum('amount');
+        $transactions = WalletTransaction::where('driver_id', $driverId)->get();
 
         return response()->json([
             'status'=> true,

@@ -63,13 +63,20 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('driver/accept-trip', [DriverController::class, 'acceptTrip']);
     Route::post('driver/start-trip', [DriverController::class, 'startTrip']);
     Route::post('driver/complete-trip', [DriverController::class, 'completeTrip']);
+    Route::post('driver/reject-trip', [DriverController::class, 'rejectTrip']);
     Route::get('driver/my-wallet', [WalletController::class, 'getWalletDriver']);
+
+    Route::post('driver/accept-cluster-trip', [DriverController::class, 'acceptCluster']);
+    Route::post('driver/start-cluster-trip', [DriverController::class, 'startCluster']);
+    Route::post('driver/complete-cluster-trip', [DriverController::class, 'completeCluster']);
+    Route::post('driver/reject-cluster-trip', [DriverController::class, 'rejectClusterTrip']);
+    Route::get('driver/get-trip', [DriverController::class, 'getTripsDriver']);
 
     Route::get('vehicle/get-vehicle', [VehiclesController::class, 'getVehicleInfo']);
     Route::post('trip-cluster', [BookingController::class, 'TripCluster']);
 
 
-    //Route::get('vehicle-types', [VehiclesController::class, 'getVehicleTypes']);
+
     //Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
     Route::post('logout', [UserController::class, 'logout']);
 });
