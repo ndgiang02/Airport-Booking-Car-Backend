@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Events\DriverLocationUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Driver;
@@ -150,12 +151,18 @@ class DriverController extends Controller
 		$user = auth()->user();
 		$driver = Driver::where('user_id', $user->id)->first();
 
+
 		if ($driver) {
 			$driver->latitude = $request->latitude;
 			$driver->longitude = $request->longitude;
 			$driver->save();
-			Log::info("Received request to update new location: ", ['latitude' => $driver->latitude, 'longitude' => $driver->longitude]);
-			//broadcast(new DriverLocationUpdated($driver->id, $driver->latitude, $driver->longitude));
+			Log::info("Phát sự kiện DriverLocationUpdated cho tài xế ID: {$driver->id} với tọa độ ({$request->latitude}, {$request->longitude})");
+
+
+			broadcast(new DriverLocationUpdated($driver->id, $request->latitude, $request->longitude));
+
+			Log::info("Sự kiện DriverLocationUpdated đã được phát thành công.");
+
 			return response()->json([
 				'status' => true,
 				'message' => 'successfully.',
@@ -172,15 +179,21 @@ class DriverController extends Controller
 
 	public function acceptTrip(Request $request)
 	{
-
 		$user = auth()->user();
+
 		$driver = Driver::where('user_id', $user->id)->first();
 
+		if (!$driver) {
+			return response()->json(['error' => 'Driver not found'], 404);
+		}
 
 		$tripId = $request->input('trip_id');
 
-		$trip = TripBooking::with(['customer.user', 'stops'])
-			->find($tripId);
+		$trip = TripBooking::with(['customer.user', 'stops'])->find($tripId);
+
+		if (!$trip || !$trip->customer) {
+			return response()->json(['error' => 'Trip or Customer not found'], 404);
+		}
 
 		if (!$trip) {
 			return response()->json(['error' => 'Trip not found'], 404);
@@ -193,6 +206,7 @@ class DriverController extends Controller
 		try {
 			DB::beginTransaction();
 
+			/*
 			$updated = TripBooking::where('id', $tripId)
 				->where('trip_status', 'requested')
 				->update(['trip_status' => 'accepted', 'driver_id' => $driver->id]);
@@ -201,11 +215,18 @@ class DriverController extends Controller
 				DB::rollBack();
 				return response()->json(['message' => 'Trip already accepted by another driver'], 409);
 			}
+			*/
+
+			$trip->driver_id = $driver->id;
+			$trip->trip_status = 'accepted';
+			$trip->save();
+			$this->customerService->sendNotificationToCustomer($trip);
 
 			$driver->available = false;
 			$driver->save();
 
 			DB::commit();
+
 
 			return response()->json([
 				'message' => 'Trip accepted successfully',
@@ -302,12 +323,37 @@ class DriverController extends Controller
 			], 404);
 		}
 
+		$customer = $trip->customer;
+
+		if (!$customer) {
+			return response()->json([
+				'message' => 'Customer not found'
+			], 404);
+		}
+
 		$totalAmount = $trip->total_amount;
 		$paymentMethod = $trip->payment;
 
 		if ($paymentMethod === 'wallet') {
+			// Trừ tiền từ ví khách hàng
+			if ($customer->wallet_balance < $totalAmount) {
+				return response()->json([
+					'message' => 'Insufficient wallet balance'
+				], 400);
+			}
+
+			$customer->wallet_balance -= $totalAmount;
+			$customer->save();
+
 			$driverIncome = $totalAmount * 0.80;
 			$driver->income += $driverIncome;
+
+			WalletTransaction::create([
+				'customer_id' => $customer->id,
+				'amount' => $totalAmount,
+				'type' => 'debit',
+				'description' => 'Trip payment (wallet)'
+			]);
 
 			WalletTransaction::create([
 				'driver_id' => $driver->id,
@@ -326,7 +372,6 @@ class DriverController extends Controller
 				'description' => 'Platform fee (cash payment)'
 			]);
 		}
-
 		$driver->save();
 
 		return response()->json([
@@ -335,6 +380,7 @@ class DriverController extends Controller
 			'data' => [
 				'trip_id' => $trip->id,
 				'driver_id' => $driver->id,
+				'customer_id' => $customer->id,
 				//'total_amount' => $totalAmount,
 				//'driver_income' => $driverIncome,
 				//'platform_fee' => $platformFee,
@@ -345,35 +391,6 @@ class DriverController extends Controller
 	}
 
 
-	/*
-	 *Show Driver Daily
-	 */
-	public function showDriverDailyIncome($driverId)
-	{
-		$today = now()->toDateString();
-
-		$dailyIncome = TripBooking::where('driver_id', $driverId)
-			->whereDate('to_date_time', $today)
-			->where('status', 'completed')
-			->sum(DB::raw('total_amount * 0.80'));
-
-		return response()->json([
-			'daily_income' => $dailyIncome
-		], 200);
-	}
-
-	public function showDriverMonthlyIncome($driverId, $month, $year)
-	{
-		$monthlyIncome = TripBooking::where('driver_id', $driverId)
-			->whereYear('to_date_time', $year)
-			->whereMonth('to_date_time', $month)
-			->where('status', 'completed')
-			->sum(DB::raw('total_amount * 0.80'));
-
-		return response()->json([
-			'monthly_income' => $monthlyIncome
-		], 200);
-	}
 
 	public function acceptCluster(Request $request)
 	{
@@ -382,8 +399,6 @@ class DriverController extends Controller
 		$driver = Driver::where('user_id', $user->id)->first();
 
 		$clusterId = $request->input('cluster_id');
-
-		Log::info('cluster Group:' . $clusterId);
 
 		$tripsInCluster = TripBooking::where('cluster_group', $clusterId)->get();
 
@@ -396,6 +411,7 @@ class DriverController extends Controller
 			$tripDetails = [];
 
 			foreach ($tripsInCluster as $trip) {
+				Log::info('Trip : ' . $trip);
 				$trip->driver_id = $driver->id;
 				$trip->trip_status = 'accepted';
 				$trip->save();
@@ -487,6 +503,8 @@ class DriverController extends Controller
 
 
 	}
+
+
 	public function completeCluster(Request $request)
 	{
 		$user = auth()->user();
@@ -524,9 +542,29 @@ class DriverController extends Controller
 
 				$totalAmount += $trip->total_amount;
 				$paymentMethod = $trip->payment;
+				$customer = $trip->customer;
+
 				if ($paymentMethod === 'wallet') {
+					if ($customer && $customer->wallet_balance >= $trip->total_amount) {
+						$customer->wallet_balance -= $trip->total_amount;
+						$customer->save();
+
+						WalletTransaction::create([
+							'customer_id' => $customer->id,
+							'amount' => $trip->total_amount,
+							'type' => 'debit',
+							'description' => 'Trip payment (wallet)'
+						]);
+					} else {
+						DB::rollBack();
+						return response()->json([
+							'message' => 'Insufficient wallet balance for one or more trips'
+						], 400);
+					}
+
 					$currentDriverIncome = $trip->total_amount * 0.80;
 					$driverIncome += $currentDriverIncome;
+
 					WalletTransaction::create([
 						'driver_id' => $driver->id,
 						'amount' => $currentDriverIncome,
@@ -546,7 +584,6 @@ class DriverController extends Controller
 					]);
 				}
 			}
-
 
 			$driver->available = true;
 			$driver->income += $driverIncome;

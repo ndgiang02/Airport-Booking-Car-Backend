@@ -139,83 +139,51 @@ class UserController extends Controller
         ], 200);
     }
 
-    /*
-
-    public function updateProfile(UserRequest $request)
+    public function updateName(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+    
         $user = Auth::user();
-
-        if ($request->has('id') && !empty($request->id)) {
-            $user = User::where('id', $request->id)->first();
-        }
-
-        if ($user == null) {
-            return response()->json(['message' => __('message.no_record_found')], 400);
-        }
-
-        if ($user->user_type == 'customer') {
-            $user->fill($request->only(['name', 'mobile']))->update();
-        }
-
-        if ($user->user_type == 'driver') {
-            $user->fill($request->all())->update();
-
-            if (isset($request->profile_image) && $request->profile_image != null) {
-                $user->clearMediaCollection('profile_image');
-                $user->addMediaFromRequest('profile_image')->toMediaCollection('profile_image');
-            }
-
-            if ($request->has('vehicle') && $request->vehicle != null) {
-                $vehicle = $user->vehicle()->first();
-                if ($vehicle) {
-                    $vehicle->fill($request->vehicle)->update();
-                } else {
-                    $user->vehicle()->create($request->vehicle);
-                }
-            }
-        }
-
-        $user_data = User::find($user->id);
-
-        // Cập nhật user detail nếu có
-        if ($user_data->userDetail != null && $request->has('user_detail')) {
-            $user_data->userDetail->fill($request->user_detail)->update();
-        } else if ($request->has('user_detail') && $request->user_detail != null) {
-            $user_data->userDetail()->create($request->user_detail);
-        }
-
-        // Chuẩn bị dữ liệu phản hồi
-        $message = __('message.updated');
-        unset($user_data['media']);
-
-        // Chuẩn bị dữ liệu phản hồi cho tài xế hoặc khách hàng
-        if ($user_data->user_type == 'driver') {
-            $user_resource = new DriverResource($user_data);
-        } else {
-            $user_resource = new UserResource($user_data);
-        }
-
-        $response = [
-            'data' => $user_resource,
-            'message' => $message
-        ];
-
-        return response()->json($response);
+    
+        $user->name = $request->name;
+        $user->save();
+    
+        return response()->json([
+            'status' => true,
+            'message' => __('message.name_update'),
+            'name' => $user->name,
+        ], 200);
     }
-        */
+    
 
     public function logout(Request $request)
     {
         $user = Auth::user();
 
-        if ($request->is('api*')) {
+        if ($user) { $user->currentAccessToken()->delete();
+            
+            if ($request->has('device_token')) {
+                if ($user->user_type === 'driver') {
+                    $user->driver->device_token = null;
+                    $user->driver->save();
+                } elseif ($user->user_type === 'customer') {
+                    $user->customer->device_token = null;
+                    $user->customer->save();
+                }
+            }
 
-            $request->user()->currentAccessToken()->delete();
-
-            return response()->json(['message' => __('message.log_out')], 200);
+            return response()->json([
+                'status' => true,
+                'message' => __('logout.successful'),
+            ], 200);
         }
 
-        return response()->json(['message' => 'Logout failed.'], 400);
+        return response()->json([
+            'status' => false,
+            'message' => __('logout.failed'),
+        ], 400);
     }
 
 

@@ -51,13 +51,13 @@ class ClusteringJob implements ShouldQueue
             $clusters = collect($result['clusters'])->unique();
 
             $tripsGroupedByCluster = [];
-    
+
             foreach ($clusters as $clusterId) {
                 $tripsInCluster = TripBooking::where('cluster_group', $clusterId)->get();
-               // AssignDriverToClusterJob::dispatch($clusterId, $tripsInCluster->first()->vehicle_type);
+                AssignDriverToClusterJob::dispatch($clusterId, $tripsInCluster->first()->vehicle_type);
                 $tripsGroupedByCluster[$clusterId] = $tripsInCluster;
             }
-    
+
             foreach ($tripsGroupedByCluster as $clusterId => $tripsInCluster) {
                 if ($tripsInCluster->isNotEmpty()) {
                     if ($tripsInCluster->isNotEmpty()) {
@@ -70,19 +70,19 @@ class ClusteringJob implements ShouldQueue
                     //AssignDriverToClusterJob::dispatch($clusterId, $tripsInCluster->first()->vehicle_type);
                 }
             }
-/*
-            foreach ($clusters as $clusterId) {
-                $tripsInCluster = TripBooking::where('cluster_group', $clusterId)->get();
+            /*
+                        foreach ($clusters as $clusterId) {
+                            $tripsInCluster = TripBooking::where('cluster_group', $clusterId)->get();
 
-                $nowTime = now();
+                            $nowTime = now();
 
-                $earliestTime = $tripsInCluster->min('scheduled_time');
+                            $earliestTime = $tripsInCluster->min('scheduled_time');
 
-                $findDriverTime = \Carbon\Carbon::parse($earliestTime)->subMinutes(30);
+                            $findDriverTime = \Carbon\Carbon::parse($earliestTime)->subMinutes(30);
 
-                AssignDriverToClusterJob::dispatch($clusterId, $tripsInCluster->first()->vehicle_type);
-            }
-                */
+                            AssignDriverToClusterJob::dispatch($clusterId, $tripsInCluster->first()->vehicle_type);
+                        }
+                            */
         }
     }
 }

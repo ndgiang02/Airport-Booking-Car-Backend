@@ -16,7 +16,18 @@ class CustomerService
             return;
         }
 
+        $trips = $trip->append(['driver_name', 'driver_mobile']);
+
         $fcmToken = $customer->device_token;
+
+        if ($trip->driver && $trip->driver->user) {
+            $driverName = $trip->driver->user->name;
+            $driverPhone = $trip->driver->user->phone;
+        } else {
+            Log::warning("No driver information available for trip ID: " . $trip->id);
+            $driverName = 'N/A'; 
+            $driverPhone = 'N/A';
+        }
 
         $notificationData = [
             'notification' => [
@@ -24,12 +35,14 @@ class CustomerService
                 'body' => 'Tài xế sẽ sớm có mặt',
             ],
             'data' => [
-                'trip_type' => 'accepted',
+                'type' => 'accepted',
+                'driver_id' => $trip->driver_id,
                 'trip_id' => (string) $trip->id,
                 'from_address' => $trip->from_address,
                 'to_address' => $trip->to_address,
-                'driver_name' => $trip->driver->user->name,
-                'driver_phone' => $trip->driver->user->phone
+                'driver_name' => $driverName,
+                'driver_phone' => $driverPhone,
+                'trip' => $trips,
             ],
         ];
 

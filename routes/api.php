@@ -46,7 +46,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
   
     Route::get('user-list', [UserController::class, 'userList']);
     Route::get('user-detail', [UserController::class, 'userDetail']);
-    Route::post('update-profile', [UserController::class, 'updateProfile']);
+    Route::post('update-name', [UserController::class, 'updateName']);
     Route::post('change-password', [UserController::class, 'changePassword']);
     Route::post('update-user-status', [UserController::class, 'updateUserStatus']);
     Route::delete('delete-user-account', [UserController::class, 'deleteUserAccount']);
@@ -54,6 +54,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('fetch-trips', [BookingController::class, 'getTrips']);
     Route::post('trip-booking', [BookingController::class, 'tripBooking']);
     Route::post('cancel-trip', [BookingController::class, 'cancelTrip']);
+    Route::get('my-wallet', [WalletController::class, 'getWalletCustomer']);
 
     Route::get('terms', [TermsController::class, 'getTerm']);
     Route::get('intro', [IntroController::class, 'getIntrodution']);
@@ -74,10 +75,6 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::get('vehicle/get-vehicle', [VehiclesController::class, 'getVehicleInfo']);
     Route::post('trip-cluster', [BookingController::class, 'TripCluster']);
-
-
-
-    //Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);
     Route::post('logout', [UserController::class, 'logout']);
 });
     Route::post('notifications', [NotificationController::class, 'sendNotificationToAllUsers']);

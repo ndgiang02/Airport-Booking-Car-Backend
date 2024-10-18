@@ -99,8 +99,8 @@ class FindNearestDriverJob implements ShouldQueue
         $fcmToken = $driver->device_token;
         $notificationData = [
             'notification' => [
-                'title' => 'New Trip Request',
-                'body' => 'You have a new trip request. Tap to view details.',
+                'title' => 'Có yêu cầu chuyến đi',
+                'body' => 'Bạn có yêu cầu chuyến đi mới',
             ],
             
             'data' => [

@@ -10,9 +10,9 @@ class Driver extends Model
 {
     use HasFactory, SoftDeletes;
     protected $fillable = [
-        'user_id', 
-        'license_no', 
-        'rating', 
+        'user_id',
+        'license_no',
+        'rating',
         'available',
         'latitude',
         'longitude',
@@ -35,4 +35,5 @@ class Driver extends Model
     {
         return $this->hasMany(WalletTransaction::class, 'driver_id');
     }
+
 }

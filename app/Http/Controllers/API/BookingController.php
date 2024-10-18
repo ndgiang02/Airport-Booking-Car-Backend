@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\TripBooking;
+use App\Models\Customer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\TripBookingResource;
@@ -19,11 +20,10 @@ class BookingController extends Controller
 
     public function tripBooking(Request $request)
     {
-
-        Log::info($request->all());
+        $user = auth()->user();
+		$customer = Customer::where('user_id', $user->id)->first();
 
         $validator = Validator::make($request->all(), [
-            'customer_id' => 'required|exists:customers,id',
             'from_address' => 'required|string|max:255',
             'from_lat' => 'required|numeric',
             'from_lng' => 'required|numeric',
@@ -53,7 +53,7 @@ class BookingController extends Controller
 
         $tripBooking = TripBooking::create([
             'driver_id' => null,
-            'customer_id' => $request->customer_id,
+            'customer_id' => $customer->id,
             'from_address' => $request->from_address,
             'from_lat' => $request->from_lat,
             'from_lng' => $request->from_lng,
@@ -88,8 +88,19 @@ class BookingController extends Controller
                 ]);
             }
         }
+    
+        $scheduleTime = Carbon::parse($tripBooking->schedule_time);
+        $currentTime = Carbon::now();
 
-        FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(1));
+        if (is_null($tripBooking->schedule_time) || $scheduleTime->diffInMinutes($currentTime) <= 30) {
+            FindNearestDriverJob::dispatch($tripBooking);
+        } else {
+            $delayTime = $scheduleTime->subMinutes(30);
+            FindNearestDriverJob::dispatch($tripBooking)->delay($delayTime);
+        }
+        
+
+       // FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(1));
 
         return response()->json([
             'status' => true,
@@ -123,10 +134,10 @@ class BookingController extends Controller
         if ($status === 'upcoming') {
             $query->whereIn('trip_status', ['requested', 'accepted']);
         } else {
-            $query->withTrashed()->whereIn('trip_status', ['completed', 'cancelled']);
+            $query->withTrashed()->whereIn('trip_status', ['completed', 'canceled']);
         }
 
-        $trips = $query->orderBy('scheduled_time', 'desc')->get();
+        $trips = $query->orderBy('scheduled_time', 'desc')->get()->append(['driver_name', 'driver_mobile']);
 
         if ($trips->isEmpty()) {
             return response()->json([
@@ -182,8 +193,10 @@ class BookingController extends Controller
 
     public function TripCluster(Request $request)
     {
+        $user = auth()->user();
+		$customer = Customer::where('user_id', $user->id)->first();
+
         $validator = Validator::make($request->all(), [
-            'customer_id' => 'required|exists:customers,id',
             'from_address' => 'required|string|max:255',
             'from_lat' => 'required|numeric',
             'from_lng' => 'required|numeric',
@@ -205,7 +218,7 @@ class BookingController extends Controller
 
         $tripBooking = TripBooking::create([
             'driver_id' => null,
-            'customer_id' => $request->customer_id,
+            'customer_id' => $customer->id,
             'from_address' => $request->from_address,
             'from_lat' => $request->from_lat,
             'from_lng' => $request->from_lng,

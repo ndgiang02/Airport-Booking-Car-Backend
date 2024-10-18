@@ -61,4 +61,14 @@ class TripBooking extends Model
     {
         return $this->belongsTo(VehicleType::class, 'vehicle_type', 'id');
     }
+
+    public function getDriverNameAttribute()
+    {
+        return $this->driver->user->name ?? null;
+    }
+
+    public function getDriverMobileAttribute()
+    {
+        return $this->driver->user->mobile ?? null;
+    }
 }

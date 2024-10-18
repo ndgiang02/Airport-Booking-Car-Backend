@@ -9,6 +9,7 @@ class WalletTransaction extends Model
     use HasFactory;
 
     protected $fillable = [
+        'customer_id',
         'driver_id',
         'amount',
         'type',
@@ -18,5 +19,10 @@ class WalletTransaction extends Model
     public function driver()
     {
         return $this->belongsTo(Driver::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 }
