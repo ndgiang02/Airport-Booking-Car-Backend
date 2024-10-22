@@ -36,13 +36,13 @@ class CustomerService
             ],
             'data' => [
                 'type' => 'accepted',
-                'driver_id' => $trip->driver_id,
+                'driver_id' =>(string) $trip->driver_id,
                 'trip_id' => (string) $trip->id,
                 'from_address' => $trip->from_address,
                 'to_address' => $trip->to_address,
                 'driver_name' => $driverName,
                 'driver_phone' => $driverPhone,
-                'trip' => $trips,
+                'trip' => json_encode($trips),
             ],
         ];
 

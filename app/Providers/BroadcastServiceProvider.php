@@ -14,6 +14,13 @@ class BroadcastServiceProvider extends ServiceProvider
     {
         Broadcast::routes();
 
+        Broadcast::routes(['middleware' => ['auth:api']]);
+
+        Broadcast::channel('driver-location.{driverId}', function ($user, $driverId) {
+            return true  ;//$user->isCustomerOfDriver($driverId);
+        });
+        
+
         require base_path('routes/channels.php');
     }
 }

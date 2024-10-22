@@ -22,9 +22,5 @@ Route::group([
     $router->resource('drivers', DriverController::class);
     $router->resource('vehicles', VehicleController::class);
     $router->resource('trip-bookings', TripBookingController::class);
-    $router->resource('customers', Customer::class);
-    $router->resource('vehicle-type', VehicleType::class);
-
-
-
+    //$router->resource('vehicle-type', VehicleType::class);
 });

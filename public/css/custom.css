@@ -1,0 +1,10 @@
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('/fonts/SF-Pro-Display-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body, .content, .box, .box-header, .box-body, .box-footer, .table, .table th, .table td {
+    font-family: 'SF Pro Display', Arial, sans-serif;
+}

@@ -191,12 +191,10 @@ class DriverController extends Controller
 
 		$trip = TripBooking::with(['customer.user', 'stops'])->find($tripId);
 
+		Log::info('accept trip :', $trip ? $trip->toArray() : []);
+
 		if (!$trip || !$trip->customer) {
 			return response()->json(['error' => 'Trip or Customer not found'], 404);
-		}
-
-		if (!$trip) {
-			return response()->json(['error' => 'Trip not found'], 404);
 		}
 
 		if ($trip->trip_status === 'accepted') {

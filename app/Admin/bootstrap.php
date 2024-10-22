@@ -19,3 +19,4 @@
  */
 
 OpenAdmin\Admin\Form::forget(['editor']);
+Admin::css('/css/custom.css');

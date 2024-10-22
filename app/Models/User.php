@@ -61,4 +61,12 @@ class User extends Authenticatable implements OTPNotifiable
         return $this->hasOne(Driver::class);
     }
 
+    public function isCustomerOfDriver($driverId)
+    {
+        
+        return TripBooking::where('driver_id', $driverId)
+                   ->where('customer_id', $this->id)
+                   ->exists();
+    }
+
 }

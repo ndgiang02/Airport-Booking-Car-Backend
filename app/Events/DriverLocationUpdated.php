@@ -9,8 +9,9 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
-class DriverLocationUpdated
+class DriverLocationUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -23,15 +24,31 @@ class DriverLocationUpdated
         $this->driverId = $driverId;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
+
+        Log::info('Broadcasting DriverLocationUpdated event', [
+            'driverId' => $this->driverId,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+        ]);
     }
 
     public function broadcastOn()
     {
-        return ['driver-location'];
+        return new PrivateChannel('driver-location.' . $this->driverId);
     }
 
     public function broadcastAs()
     {
         return 'DriverLocationUpdated';
     }
+
+    public function broadcastWith()
+    {
+        return [
+            'driverId' => $this->driverId,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+        ];
+    }
+
 }
