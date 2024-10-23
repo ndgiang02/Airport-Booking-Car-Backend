@@ -156,13 +156,8 @@ class DriverController extends Controller
 			$driver->latitude = $request->latitude;
 			$driver->longitude = $request->longitude;
 			$driver->save();
-			Log::info("Phát sự kiện DriverLocationUpdated cho tài xế ID: {$driver->id} với tọa độ ({$request->latitude}, {$request->longitude})");
-
 
 			broadcast(new DriverLocationUpdated($driver->id, $request->latitude, $request->longitude));
-
-			Log::info("Sự kiện DriverLocationUpdated đã được phát thành công.");
-
 			return response()->json([
 				'status' => true,
 				'message' => 'successfully.',
@@ -203,17 +198,6 @@ class DriverController extends Controller
 
 		try {
 			DB::beginTransaction();
-
-			/*
-			$updated = TripBooking::where('id', $tripId)
-				->where('trip_status', 'requested')
-				->update(['trip_status' => 'accepted', 'driver_id' => $driver->id]);
-
-			if (!$updated) {
-				DB::rollBack();
-				return response()->json(['message' => 'Trip already accepted by another driver'], 409);
-			}
-			*/
 
 			$trip->driver_id = $driver->id;
 			$trip->trip_status = 'accepted';
@@ -333,7 +317,6 @@ class DriverController extends Controller
 		$paymentMethod = $trip->payment;
 
 		if ($paymentMethod === 'wallet') {
-			// Trừ tiền từ ví khách hàng
 			if ($customer->wallet_balance < $totalAmount) {
 				return response()->json([
 					'message' => 'Insufficient wallet balance'

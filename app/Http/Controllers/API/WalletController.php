@@ -31,7 +31,7 @@ class WalletController extends Controller
         return response()->json([
             'status'=> true,
             'message' => 'Wallet transactions fetched successfully',
-            'balance' => $balance,
+            'balance' => $driver->wallet_balance,
             'transactions' => $transactions
         ]);
     }
@@ -52,13 +52,13 @@ class WalletController extends Controller
 
         $customerId = $customer->id;
         
-        $balance = WalletTransaction::where('driver_id', $customerId)->sum('amount');
-        $transactions = WalletTransaction::where('driver_id', $customerId)->get();
+        //$balance = WalletTransaction::where('driver_id', $customerId)->sum('amount');
+        $transactions = WalletTransaction::where('customer_id', $customerId)->get();
 
         return response()->json([
             'status'=> true,
             'message' => 'Wallet transactions fetched successfully',
-            'balance' => $balance,
+            'balance' => $customer->wallet_balance,
             'transactions' => $transactions
         ]);
     }

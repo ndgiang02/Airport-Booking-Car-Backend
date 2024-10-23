@@ -27,21 +27,39 @@ class DriverController extends AdminController
         $grid = new Grid(new Driver());
         // $grid->model()->where('available', true);
 
+        $totalDrivers = Driver::count();
+
+        $activeDrivers = Driver::where('available', true)->count();
+
+        $grid->header(function ($query) use ($totalDrivers, $activeDrivers) {
+            return "
+                 <div style='padding: 10px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);'>
+            <div style='display: flex; flex-direction: column; align-items: start;'>
+                <div style='font-size: 16px; color: #333;'>
+                    <strong>Tổng số tài xế:</strong> $totalDrivers
+                </div>
+                <div style='font-size: 16px; color: #333; margin-top: 5px;'>
+                    <strong>Số tài xế đang hoạt động:</strong> 
+                    <span style='color: green;'>$activeDrivers</span>
+                </div>
+            </div>
+        </div>
+            ";
+        });
+
+
         $grid->column('id', __('Id'));
         $grid->column('user_id', __('User id'));
+        $grid->column('user.name', __('Name'));
         $grid->column('license_no', __('License no'));
-        $grid->column('rating', __('Rating'));
         $grid->column('available', __('Available'))->display(function ($available) {
             $color = $available ? 'green' : 'red';
             $text = $available ? 'Available' : 'Not Available';
-        
+
             return "<span style='display: inline-block; padding: 5px 10px; color: white; background-color: $color; border-radius: 5px;'>$text</span>";
-        });        
+        });
         $grid->column('latitude', __('Latitude'));
         $grid->column('longitude', __('Longitude'));
-        $grid->column('income', __('Income'))->display(function ($income) {
-            return number_format($income, 2);
-        });
         $grid->column('wallet_balance', __('Wallet balance'))->display(function ($wallet_balance) {
             return number_format($wallet_balance, 2);
         });
@@ -72,11 +90,9 @@ class DriverController extends AdminController
         });
         $show->field('latitude', __('Latitude'));
         $show->field('longitude', __('Longitude'));
-        $show->field('income', __('Income'))->as(function ($income) {
-            return '$' . number_format($income, 2);
-        });
+       
         $show->field('wallet_balance', __('Wallet balance'))->as(function ($wallet_balance) {
-            return '$' . number_format($wallet_balance, 2);
+            return number_format($wallet_balance, 2);
         });
         $show->field('device_token', __('Device token'));
         $show->field('created_at', __('Created at'))->format('d-m-Y H:i');
@@ -101,7 +117,6 @@ class DriverController extends AdminController
         $form->switch('available', __('Available'))->default(false);
         $form->decimal('latitude', __('Latitude'))->rules('nullable|numeric|min:-90|max:90');
         $form->decimal('longitude', __('Longitude'))->rules('nullable|numeric|min:-180|max:180');
-        $form->decimal('income', __('Income'))->default(0.00)->rules('numeric|min:0');
         $form->decimal('wallet_balance', __('Wallet balance'))->default(0.00)->rules('numeric|min:0');
         $form->text('device_token', __('Device token'))->rules('nullable|string|max:255');
 

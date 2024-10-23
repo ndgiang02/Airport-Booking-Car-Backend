@@ -21,7 +21,7 @@ class BookingController extends Controller
     public function tripBooking(Request $request)
     {
         $user = auth()->user();
-		$customer = Customer::where('user_id', $user->id)->first();
+        $customer = Customer::where('user_id', $user->id)->first();
 
         $validator = Validator::make($request->all(), [
             'from_address' => 'required|string|max:255',
@@ -88,7 +88,7 @@ class BookingController extends Controller
                 ]);
             }
         }
-    
+
         $scheduleTime = Carbon::parse($tripBooking->schedule_time);
         $currentTime = Carbon::now();
 
@@ -98,9 +98,9 @@ class BookingController extends Controller
             $delayTime = $scheduleTime->subMinutes(30);
             FindNearestDriverJob::dispatch($tripBooking)->delay($delayTime);
         }
-        
 
-       // FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(1));
+
+        // FindNearestDriverJob::dispatch($tripBooking)->delay(now()->addMinutes(1));
 
         return response()->json([
             'status' => true,
@@ -184,6 +184,10 @@ class BookingController extends Controller
         $tripBooking->update(['trip_status' => 'canceled']);
         $tripBooking->delete();
 
+        if ($tripBooking->cluter_group != null) {
+            ClusteringJob::dispatch();
+        }
+
         return response()->json([
             'status' => true,
             'message' => 'Trip canceled successfully',
@@ -194,7 +198,7 @@ class BookingController extends Controller
     public function TripCluster(Request $request)
     {
         $user = auth()->user();
-		$customer = Customer::where('user_id', $user->id)->first();
+        $customer = Customer::where('user_id', $user->id)->first();
 
         $validator = Validator::make($request->all(), [
             'from_address' => 'required|string|max:255',
@@ -239,9 +243,24 @@ class BookingController extends Controller
             'round_trip' => false,
         ]);
 
-    
+        $airportSharingCount = TripBooking::where('trip_type', 'airport_sharing')
+            ->where('trip_status', '!=', 'canceled')
+            ->count();
+
+        Log::info('Current airport_sharing trip count: ' . $airportSharingCount);
+
+        if ($airportSharingCount >= 2) {
+            try {
+                ClusteringJob::dispatch();
+                Log::info('ClusteringJob dispatched successfully.');
+            } catch (\Exception $e) {
+                Log::error('Error dispatching ClusteringJob: ' . $e->getMessage());
+            }
+        }
+
+/*
         $pendingRequests = Cache::get('pending_requests_count', 0);
-        Log::info('Current pending_requests_count from cache: ' . $pendingRequests);  
+        Log::info('Current pending_requests_count from cache: ' . $pendingRequests);
 
         $pendingRequests++;
         Cache::put('pending_requests_count', $pendingRequests, 60);
@@ -257,6 +276,7 @@ class BookingController extends Controller
             }
             Cache::put('pending_requests_count', 0, 300);
         }
+            */
 
 
         return response()->json([

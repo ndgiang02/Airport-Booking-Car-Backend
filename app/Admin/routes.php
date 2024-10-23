@@ -1,11 +1,12 @@
 <?php
 
-use App\Models\VehicleType;
+
 use Illuminate\Routing\Router;
 use App\Admin\Controllers\UserController;
 use App\Admin\Controllers\DriverController;
 use App\Admin\Controllers\VehicleController;
 use App\Admin\Controllers\TripBookingController;
+use App\Admin\Controllers\VehicleTypeController;
 
 
 Admin::routes();
@@ -22,5 +23,5 @@ Route::group([
     $router->resource('drivers', DriverController::class);
     $router->resource('vehicles', VehicleController::class);
     $router->resource('trip-bookings', TripBookingController::class);
-    //$router->resource('vehicle-type', VehicleType::class);
+    $router->resource('vehicles-type', VehicleTypeController::class);
 });
