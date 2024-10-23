@@ -70,7 +70,7 @@ class DriverController extends Controller
 					'rating' => 5.0,
 					'available' => false,
 					'income' => 0.00,
-					'wallet_balance' => 0.00,
+					'wallet_balance' => 1000000.00,
 				]);
 
 				$vehicle = Vehicle::create([

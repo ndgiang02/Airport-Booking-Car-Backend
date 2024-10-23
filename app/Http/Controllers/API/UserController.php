@@ -39,6 +39,7 @@ class UserController extends Controller
 
             $customer = Customer::create([
                 'user_id' => $user->id,
+                'wallet_balance' => 1000000,
                 'rating' => 5.0,
             ]);
 
@@ -311,7 +312,6 @@ class UserController extends Controller
             ], 200);
         }
     }
-
 
     public function getUserByPhoneNumber(Request $request)
     {
