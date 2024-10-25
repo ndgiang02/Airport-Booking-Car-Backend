@@ -25,6 +25,11 @@ class UserController extends AdminController
         $grid->column('created_at', __('Created at'));
         $grid->column('updated_at', __('Updated at'));
 
+        $grid->filter(function($filter) {
+            $filter->scope('trashed', 'Recycle Bin')->onlyTrashed();
+        
+        });
+
         return $grid;
     }
 
@@ -48,19 +53,19 @@ class UserController extends AdminController
     {
         $form = new Form(new User());
 
-        $form->text('name', __('Name'))->required();
-        $form->email('email', __('Email'))->required();
-        $form->mobile('mobile', __('Mobile'))->required();
+        $form->text('name', __('Name'));
+        $form->email('email', __('Email'));
+        $form->number('mobile', __('Mobile'));
         $form->select('user_type', __('User Type'))->options([
             'customer' => 'Customer',
             'driver' => 'Driver',
             'admin' => 'Admin',
-        ])->required();
+        ]);
         $form->select('status', __('Status'))->options([
             'active' => 'Active',
             'inactive' => 'Inactive',
-        ])->required();
-        $form->password('password', __('Password'))->required();
+        ]);
+        $form->password('password', __('Password'));
 
         return $form;
     }

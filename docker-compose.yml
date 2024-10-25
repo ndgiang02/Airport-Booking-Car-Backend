@@ -1,5 +1,8 @@
 services:
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: 'webdevops/php-nginx:8.2'
     container_name: booking-app-backend
     working_dir: /var/www
@@ -62,5 +65,5 @@ volumes:
   dbdata:
 
 networks:
-  app-network:   # Định nghĩa mạng app-network
+  app-network:
     driver: bridge

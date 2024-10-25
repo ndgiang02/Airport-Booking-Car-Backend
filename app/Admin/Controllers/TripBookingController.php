@@ -38,15 +38,15 @@ class TripBookingController extends AdminController
         $grid->column('scheduled_time', __('Scheduled time'))->display(function ($scheduled_time) {
             return $scheduled_time ? \Carbon\Carbon::parse($scheduled_time)->format('d-m-Y H:i') : 'N/A';
         });
-        
+
         $grid->column('from_time', __('From time'))->display(function ($from_time) {
             return $from_time ? \Carbon\Carbon::parse($from_time)->format('d-m-Y H:i') : 'N/A';
         });
-        
+
         $grid->column('to_time', __('To time'))->display(function ($to_time) {
             return $to_time ? \Carbon\Carbon::parse($to_time)->format('d-m-Y H:i') : 'N/A';
         });
-        
+
         $grid->column('return_time', __('Return time'))->display(function ($return_time) {
             return $return_time ? \Carbon\Carbon::parse($return_time)->format('d-m-Y H:i') : 'N/A';
         });
@@ -54,7 +54,9 @@ class TripBookingController extends AdminController
         $grid->column('km', __('Km'));
         $grid->column('passenger_count', __('Passenger count'));
         $grid->column('total_amount', __('Total amount'));
-        $grid->column('payment', __('Payment'));
+        $grid->column('payment', __('Payment'))->display(function ($payment) {
+            return $payment === 'cash' ? 'Cash' : ($payment === 'wallet' ? 'Wallet' : $payment);
+        });
         $grid->column('trip_status', __('Trip Status'))->display(function ($status) {
             switch ($status) {
                 case 'requested':
@@ -71,7 +73,7 @@ class TripBookingController extends AdminController
                     return $status;
             }
         })->sortable();
-        
+
         $grid->column('trip_type', __('Trip type'));
         $grid->column('cluster_group', __('Cluster group'));
         $grid->column('created_at', __('Created at'));
@@ -116,8 +118,12 @@ class TripBookingController extends AdminController
         $show->field('round_trip', __('Round trip'));
         $show->field('km', __('Km'));
         $show->field('passenger_count', __('Passenger count'));
-        $show->field('total_amount', __('Total amount'));
-        $show->field('payment', __('Payment'));
+        $show->field('total_amount', __('Total amount'))->as(function ($amount) {
+            return number_format($amount, 0, ',', '.').' VND'; // Định dạng và thêm đơn vị tiền tệ
+        });
+        $show->field('payment', __('Payment'))->as(function ($payment) {
+            return $payment === 'cash' ? 'Cash' : ($payment === 'wallet' ? 'Wallet' : $payment);
+        });        
         $show->field('trip_status', __('Trip status'));
         $show->field('trip_type', __('Trip type'));
         $show->field('cluster_group', __('Cluster group'));
@@ -154,7 +160,11 @@ class TripBookingController extends AdminController
         $form->number('km', __('Km'));
         $form->number('passenger_count', __('Passenger count'))->default(1);
         $form->decimal('total_amount', __('Total amount'))->rules('nullable|numeric');
-        $form->text('payment', __('Payment'));
+        $form->select('payment', __('Payment'))
+            ->options([
+                'cash' => 'Cash',
+                'wallet' => 'Wallet',
+            ]);
         $form->select('trip_status', __('Trip status'))->options([
             'requested' => 'Requested',
             'accepted' => 'Accepted',

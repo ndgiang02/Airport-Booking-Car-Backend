@@ -226,3 +226,45 @@ Cảng Hàng Không Quốc Tế Nội Bài Ga Hàng Hóa Xã Phú Minh, Huyện 
     }
     prefs.setString('auth_token', userModel.data!.token!);
   }
+
+   nginx-proxy:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "80:80"  # Lắng nghe yêu cầu HTTP trên cổng 80
+      - "443:443"  # Lắng nghe yêu cầu HTTPS (nếu có)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Tệp cấu hình Nginx
+    depends_on:
+      - app  # Trỏ về ứng dụng Laravel
+    networks:
+      - app-network
+
+volumes:
+  dbdata:
+
+  http {
+    server {
+        listen 80;
+        server_name yourdomain.com www.yourdomain.com;  # Thay thế bằng tên miền của bạn
+
+        location / {
+            proxy_pass http://app:80;  # Trỏ đến ứng dụng PHP
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+
+        location /api/ {
+            proxy_pass http://python-api:5000;  # Trỏ đến API Python
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+}
+

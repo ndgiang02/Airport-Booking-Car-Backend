@@ -83,12 +83,12 @@ class VehicleTypeController extends AdminController
     {
         $form = new Form(new VehicleType());
 
-        $form->text('type', __('Type'))->unique()->required();
-        $form->text('name', __('Name'))->required();
-        $form->number('seating_capacity', __('Seating Capacity'))->required();
-        $form->decimal('starting_price', __('Starting Price'), 10, 2)->required();
-        $form->decimal('rate_per_km', __('Rate per KM'), 8, 2)->required();
-        $form->image('image', __('Image'))->removable(); // Allow image removal
+        $form->text('type', __('Type'))->unique();
+        $form->text('name', __('Name'));
+        $form->number('seating_capacity', __('Seating Capacity'));
+        $form->decimal('starting_price', __('Starting Price'), 10, 2);
+        $form->decimal('rate_per_km', __('Rate per KM'), 8, 2);
+        $form->image('image', __('Image'))->removable(); 
 
         return $form;
     }

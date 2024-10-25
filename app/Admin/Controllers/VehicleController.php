@@ -75,10 +75,10 @@ class VehicleController extends AdminController
 
         $form->number('driver_id', __('Driver ID'));
         $form->number('vehicle_type_id', __('Vehicle Type ID'));
-        $form->text('brand', __('Brand'))->required();
-        $form->text('model', __('Model'))->required();
-        $form->text('color', __('Color'))->required();
-        $form->text('license_plate', __('License Plate'))->required();
+        $form->text('brand', __('Brand'));
+        $form->text('model', __('Model'));
+        $form->text('color', __('Color'));
+        $form->text('license_plate', __('License Plate'));
 
         return $form;
     }
